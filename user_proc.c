@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <time.h>
 #include "oss.h"
-#include "user_proc.h"
 #include "config.h"
 #include "shm.h"
-#include "deadlock.h"
-#include "resource.h"
+#include "ipcm.h"
+#include "memory.h"
+#include "user_proc.h"
 
 
 char perror_buf[50];
@@ -30,8 +30,6 @@ int main (int argc, char ** argv){
 	int ptype;
 	int id = atoi(argv[1]);
 
-	foo = id;
-
 	srand(getpid());
 
 
@@ -51,24 +49,21 @@ void doit(int id) {
 			printf("error receving message\n");
 			exit(-1);
 		}
-		operation = opType(ptype);
 
-		canUseNano = msg.pRunNano;
-		msg.pRunNano = canUseNano;
 		msg.mtype = msg.ossid;
 
-		msg.pOperation = operation;
+
 		// strcpy(msg.mtext, strbuf);
 		// snprintf(&msg.mtext[0],sizeof(msg.mtext), "from %ld",  id);
 		if (msgsnd(msg_id, (void *)&msg, sizeof(msg), 0) == -1) {
 			printf("oss msg not sent");
 		}
-		id = foo;
+		//id = foo;
 
-		if(operation == PT_TERMINATE) {
-			printf("uproc terminated\n");
-			kill(getpid(), SIGKILL);
-		}
+		// if(operation == PT_TERMINATE) {
+		// 	printf("uproc terminated\n");
+		// 	kill(getpid(), SIGKILL);
+		// }
 	}
 }
 
@@ -82,6 +77,18 @@ void uprocInitialize(){
 	}
 
 	msg_id=msgget(sndkey, 0666 );
+}
+
+int getMemAddr(int id) {
+	srand(time(0));
+	shm_data->ptab.pcb[id].pageNum = rand() % 32 + 1;
+	printf("pageNum = %i\n", shm_data->ptab.pcb[id].pageNum);
+	int randOffset = rand() % 1023 + 1;
+	printf("randOffset = %i\n", randOffset);
+	int offset = shm_data->ptab.pcb[id].pageNum * 1024 + randOffset;
+	printf("offset = %i\n", offset);
+
+	return offset;
 }
 
 void loop(int id){
@@ -102,20 +109,20 @@ void loop(int id){
     }
   }
 
-  srand(time(0));
-  int randNum = rand() % 10 + 1;
-
-  if (randNum < PROB_RELEASE) {
-    releaseResources(id);
-  }
-  else if (randNum < PROB_TERMINATE) {
-    procTerminate(id);
-  }
-  else {
-    requestResources(id);
-  }
-  int randNano = rand() % 500000000;
-  updateClock(0, randNano);
+  // srand(time(0));
+  // int randNum = rand() % 10 + 1;
+	//
+  // if (randNum < PROB_RELEASE) {
+  //   releaseResources(id);
+  // }
+  // else if (randNum < PROB_TERMINATE) {
+  //   procTerminate(id);
+  // }
+  // else {
+  //   requestResources(id);
+  // }
+  // int randNano = rand() % 500000000;
+  // updateClock(0, randNano);
 
 }
 

@@ -15,9 +15,10 @@
 #include "config.h"
 #include "osclock.h"
 #include "shm.h"
-#include "oss.h"
-#include "queue.h"
+#include "ipcm.h"
 #include "logger.h"
+#include "memory.h"
+#include "oss.h"
 
 int main(int argc, char ** argv){
 
@@ -25,7 +26,6 @@ int main(int argc, char ** argv){
     srand(getpid());
 
     initialize();
-    shm_data->requestFlag = -1;
 
     if (totalProcesses == 0) {
         launchNewProc();
@@ -36,7 +36,7 @@ int main(int argc, char ** argv){
 
     sleep(1);
 
-    printStats();
+    //printStats();
 
     printf("oss done\n");
     bail();
@@ -103,15 +103,6 @@ PCB * createProcess() {
         int i;
         int max = 0;
         printf("\n");
-        for (i = 0; i < RESOURCES; i++) {
-             //printf(" %02d ", shm_data->r_state.resource[i]);
-             max = shm_data->r_state.resource[i] + 1;
-             //printf("max = %02d ", max);
-             pcb->rsrcsNeeded[i] = rand() % max;
-             //printf("RN%02d = %02d ", i, pcb->rsrcsNeeded[i]);
-        }
-
-        claimMatrix(pcb, pcbIndex);
 
         shm_data->local_pid++;
 
@@ -123,26 +114,24 @@ PCB * createProcess() {
     }
     int randNano = rand() % 500000000;
   	updateClock(0, randNano);
-    //printf("in oss: requestflag = %i\n", shm_data->requestFlag);
-    while(shm_data->requestFlag != pcbIndex) {}
-    //printf( "out of while loop\n");
 
-    snprintf(logbuf, sizeof(logbuf),
-            "Master has detected Process with PID %i is requesting  R%i at time %0d:%09d\n",
-              pcb->local_pid & 0xff, shm_data->ptab.pcb[pcbIndex].resReqIndex,
-              osclock.seconds(), osclock.nanoseconds());
 
-    logger(logbuf);
-
-    checkRequest(pcbIndex);
     osclock.add(0,1);
     return pcb;
 }
 
+void initialize() {
+	//createQueues();
+	initializeSharedMemory();
+	//initializeMessageQueue();
+  //initStats();
+  ossClock();
+}
+
 void initStats() {
-  int memPerSec;
-  int pageFault;
-  int avgMemAccessSpd;
+  int memPerSec = 0;
+  int pageFault = 0;
+  int avgMemAccessSpd = 0;
 }
 /*** rewrite statements ***/
 // void printStats() {
@@ -226,9 +215,6 @@ void doSigHandler(int sig) {
 
 void bail() {
     deinitSharedMemory();
-    if (sem_unlink(SEM_NAME) < 0) {
-      perror("sem_unlink(3) failed\n");
-    }
     kill(0, SIGTERM);
     exit(0);
 }

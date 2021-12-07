@@ -27,6 +27,7 @@ typedef struct shared_data {
 	// process table
 	struct proc_table ptab;
 
+/****** may not need to be in shared memory ****/
 	// report stats
 	int memPerSec;
 	int pageFault;

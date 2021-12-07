@@ -33,7 +33,7 @@ pid_t pid;
 
 void initialize();
 void initializeSharedMemory();
-void initializeMessageQueue();
+//void initializeMessageQueue();
 struct proc_ctrl_blck  * createProcess();
 
 void createMessageQueue();

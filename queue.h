@@ -19,7 +19,7 @@ typedef struct Queue {
     struct queueItem * tail;
 } Queue;
 
-extern Queue all_queues[RESOURCES];
+extern Queue all_queues[200];
 //void queueDump(int index, char * indent);
 
 
