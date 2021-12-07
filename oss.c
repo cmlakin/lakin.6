@@ -70,6 +70,8 @@ void scheduler() {
     //   }
     // }
 
+    memoryRequest(foo);
+
 }
 
 void memoryRequest(PCB *pcb) {
@@ -105,7 +107,8 @@ void memoryRequest(PCB *pcb) {
 
 	printf("oss: waiting for msg\n");
 
-	while(msgrcv(msg_id, (void *)&recv, sizeof(recv), send.ossid, 0) == -1) {
+  // change back to while after fixed
+	if(msgrcv(msg_id, (void *)&recv, sizeof(recv), send.ossid, 0) == -1) {
 		printf("oss: waiting for msg error %d\n", errno);
 	}
 
@@ -177,7 +180,7 @@ PCB * createProcess() {
 void initialize() {
 	//createQueues();
 	initializeSharedMemory();
-	//initializeMessageQueue();
+	initializeMessageQueue();
   //initStats();
   ossClock();
 }

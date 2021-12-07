@@ -47,7 +47,7 @@ void doit(int id) {
 		ipcmsg msg;
 
 		if(msgrcv(msg_id, (void *)&msg, sizeof(ipcmsg), id + 1, 0) == -1) {
-			printf("error receving message\n");
+			printf("u_proc error receving message\n");
 			exit(-1);
 		}
 
