@@ -13,6 +13,7 @@ char perror_buf[50];
 const char * perror_arg1 = "user_proc";
 static int shm_id;
 static int msg_id;
+static int foo;
 
 void attachSharedMemory();
 
@@ -27,16 +28,16 @@ char strbuf[20];
 
 
 int main (int argc, char ** argv){
-	int ptype;
+
 	int id = atoi(argv[1]);
+
+	foo = id;
 
 	srand(getpid());
 
-
+	//int addr = getMemAddr();
 	uprocInitialize();
 	attachSharedMemory();
-	ptype = getProcessType(id);
-	updateSharedCounters(ptype);
 	doit(id);
 	//uprocFinished(ptype);
 }
@@ -52,18 +53,14 @@ void doit(int id) {
 
 		msg.mtype = msg.ossid;
 
+		foo = id;
 
 		// strcpy(msg.mtext, strbuf);
 		// snprintf(&msg.mtext[0],sizeof(msg.mtext), "from %ld",  id);
 		if (msgsnd(msg_id, (void *)&msg, sizeof(msg), 0) == -1) {
 			printf("oss msg not sent");
 		}
-		//id = foo;
 
-		// if(operation == PT_TERMINATE) {
-		// 	printf("uproc terminated\n");
-		// 	kill(getpid(), SIGKILL);
-		// }
 	}
 }
 
@@ -81,14 +78,14 @@ void uprocInitialize(){
 
 int getMemAddr(int id) {
 	srand(time(0));
-	shm_data->ptab.pcb[id].pageNum = rand() % 32 + 1;
-	printf("pageNum = %i\n", shm_data->ptab.pcb[id].pageNum);
-	int randOffset = rand() % 1023 + 1;
-	printf("randOffset = %i\n", randOffset);
-	int offset = shm_data->ptab.pcb[id].pageNum * 1024 + randOffset;
+	int pageNum = rand() % 32;
+	printf("pageNum = %i\n", pageNum);
+	int offset = rand() % 1024;
 	printf("offset = %i\n", offset);
+	int memAddr = pageNum * 1024 + offset;
+	printf("memAddr = %i\n", memAddr);
 
-	return offset;
+	return memAddr;
 }
 
 void loop(int id){

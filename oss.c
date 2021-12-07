@@ -51,25 +51,79 @@ void scheduler() {
     //int pInd = foo->local_pid & 0xff;
     // printf("pInd = %i\n", pInd);
 
-    while (totalProcesses < MAX_TOT_PROCS) {
+    // while (totalProcesses < testNum) {
+    //
+    //
+    //   if (shm_data->activeProcs < testNum) {
+    //     int create = osclock.seconds() > shm_data->launchSec;
+    //
+    //     if(!create && osclock.seconds()) {
+    //       create = osclock.seconds() > shm_data->launchSec && osclock.nanoseconds() >= shm_data->launchNano;
+    //     }
+    //     create = 1;
+    //     if(create) {
+    //       printf("current %0d:%09d\n", osclock.seconds(), osclock.nanoseconds());
+    //       printf("lanuch  %0d:%09d\n", shm_data->launchSec, shm_data->launchNano);
+    //       foo = createProcess();
+    //       launchNewProc();
+    //     }
+    //   }
+    // }
+
+}
+
+void memoryRequest(PCB *pcb) {
+	printf("oss: dispatch %d\n", pcb->local_pid & 0xff);
+
+	// create time slice for process
+	//timeSlice();
+
+	// create msg to send to uproc
+	struct ipcmsg send;
+	struct ipcmsg recv;
+
+	memset((void *)&send, 0, sizeof(send));
+	send.mtype = (pcb->local_pid & 0xff) + 1;
+	send.ossid = send.mtype;
+	strcpy(send.mtext, "foo");
+
+	// printf("oss: dispatch local_pid %i from queue %i at time %i:%09i\n", pcb->local_pid, pcb->ptype,
+	// 	osclock.seconds(), osclock.nanoseconds());
+
+	osclock.add(0,1);
+	// snprintf(logbuf, sizeof(logbuf), "OSS: Dispatching process with PID %i from queue %i at time %0d:%09d\n",
+	// 	pcb->local_pid & 0xff, pcb->ptype, osclock.seconds(), osclock.nanoseconds());
+	// logStatistics(logbuf);
+
+	while (msgsnd(msg_id, (void *)&send, sizeof(send), 0) == -1) {
+		printf("oss: msg not sent to %d error %d\n", (int)send.mtype, errno);
+		sleep(1);
+	}
+
+	printf("oss: msg sent to %d\n", (int)send.mtype);
+	printf("msg_id %i\n", msg_id);
+
+	printf("oss: waiting for msg\n");
+
+	while(msgrcv(msg_id, (void *)&recv, sizeof(recv), send.ossid, 0) == -1) {
+		printf("oss: waiting for msg error %d\n", errno);
+	}
+
+	printf("oss msg received: %s\n", recv.mtext);
+	// if(recv.pOperation == PT_TERMINATE) {
+	// 	printf("oss PT_TERMINATE: %d\n", pcb->local_pid & 0xff);
+	// 	clearBit(pcb->local_pid & 0xff);
+	// 	activeProcs--;
+	// 	allocatedProcs--;
+	// }
 
 
-      if (shm_data->activeProcs < PROCESSES) {
-        int create = osclock.seconds() > shm_data->launchSec;
 
-        if(!create && osclock.seconds()) {
-          create = osclock.seconds() > shm_data->launchSec && osclock.nanoseconds() >= shm_data->launchNano;
-        }
-        create = 1;
-        if(create) {
-          printf("current %0d:%09d\n", osclock.seconds(), osclock.nanoseconds());
-          printf("lanuch  %0d:%09d\n", shm_data->launchSec, shm_data->launchNano);
-          foo = createProcess();
-          launchNewProc();
-        }
-      }
-    }
+	//dispatchUpdateClock();
 
+	// snprintf(logbuf, sizeof(logbuf),"OSS: Receiving that process with PID %i ran for %i nanoseconds\n",
+	// 	pcb->local_pid & 0xff, shm_data->osRunNano);
+	// logStatistics(logbuf);
 }
 
 PCB * createProcess() {

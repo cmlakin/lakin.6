@@ -52,3 +52,4 @@ void scheduler();
 int findAvailablePcb(void);
 void printStats();
 void initStats();
+void memoryRequest();
