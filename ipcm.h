@@ -2,7 +2,7 @@
 
 
 
-void initializeMessageQueue();
+int initializeMessageQueue();
 
 // char perror_buf[50]; // buffer for perror
 // static char * perror_arg0 = "oss"; // pointer to return error value
@@ -12,10 +12,7 @@ void initializeMessageQueue();
 typedef struct ipcmsg {
 	long mtype;
 	char mtext[MAX_TEXT];
-
-	int ossid;
-	int pRunSec;
-	int pRunNano;
+  int ossid;
 	int memRef; // adress request
   int dirtyB; // read (0) or write (1)
 

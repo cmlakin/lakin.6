@@ -51,26 +51,60 @@ void scheduler() {
     //int pInd = foo->local_pid & 0xff;
     // printf("pInd = %i\n", pInd);
 
-    while (totalProcesses < MAX_TOT_PROCS) {
-
-
-      if (shm_data->activeProcs < PROCESSES) {
-        int create = osclock.seconds() > shm_data->launchSec;
-
-        if(!create && osclock.seconds()) {
-          create = osclock.seconds() > shm_data->launchSec && osclock.nanoseconds() >= shm_data->launchNano;
-        }
-        create = 1;
-        if(create) {
-          printf("current %0d:%09d\n", osclock.seconds(), osclock.nanoseconds());
-          printf("lanuch  %0d:%09d\n", shm_data->launchSec, shm_data->launchNano);
-          foo = createProcess();
-          launchNewProc();
-        }
-      }
-    }
+    // while (totalProcesses < MAX_TOT_PROCS) {
+    //
+    //
+    //   if (shm_data->activeProcs < PROCESSES) {
+    //     int create = osclock.seconds() > shm_data->launchSec;
+    //
+    //     if(!create && osclock.seconds()) {
+    //       create = osclock.seconds() > shm_data->launchSec && osclock.nanoseconds() >= shm_data->launchNano;
+    //     }
+    //     create = 1;
+    //     if(create) {
+    //       printf("current %0d:%09d\n", osclock.seconds(), osclock.nanoseconds());
+    //       printf("lanuch  %0d:%09d\n", shm_data->launchSec, shm_data->launchNano);
+    //       foo = createProcess();
+    //       launchNewProc();
+    //     }
+    //   }
+    // }
+    memoryRequest(foo);
 
 }
+
+void memoryRequest(PCB *pcb) {
+	printf("oss: dispatch %d\n", pcb->local_pid & 0xff);
+
+	// create msg to send to uproc
+	struct ipcmsg send;
+	struct ipcmsg recv;
+
+	memset((void *)&send, 0, sizeof(send));
+	send.mtype = (pcb->local_pid & 0xff) + 1;
+	send.ossid = send.mtype;
+	strcpy(send.mtext, "foo");
+
+	while (msgsnd(msg_id, (void *)&send, sizeof(send), 0) == -1) {
+		printf("oss: msg not sent to %d error %d\n", (int)send.mtype, errno);
+		sleep(1);
+	}
+
+	printf("oss: msg sent to %d\n", (int)send.mtype);
+	printf("msg_id %i\n", msg_id);
+
+	printf("oss: waiting for msg\n");
+
+	while(msgrcv(msg_id, (void *)&recv, sizeof(recv), send.ossid, 0) == -1) {
+		printf("oss: waiting for msg error %d\n", errno);
+	}
+
+	printf("oss msg received: %s\n", recv.mtext);
+
+
+
+}
+
 
 PCB * createProcess() {
     printf("\ncreateProcess\n");
@@ -123,7 +157,7 @@ PCB * createProcess() {
 void initialize() {
 	//createQueues();
 	initializeSharedMemory();
-	//initializeMessageQueue();
+	msg_id = initializeMessageQueue();
   //initStats();
   ossClock();
 }

@@ -14,42 +14,30 @@ const char * perror_arg1 = "user_proc";
 static int shm_id;
 static int msg_id;
 
-void attachSharedMemory();
-
 char strbuf[20];
 PCB * pcb;
 
-void uprocInitialize();
-void doit();
-void attachSharedMemory();
-
-char strbuf[20];
-
-
 int main (int argc, char ** argv){
-	int ptype;
-	int id = atoi(argv[1]);
+		int id = atoi(argv[1]);
 
 	srand(getpid());
 
 
 	uprocInitialize();
 	attachSharedMemory();
-	ptype = getProcessType(id);
-	updateSharedCounters(ptype);
 	doit(id);
 	//uprocFinished(ptype);
 }
 
 void doit(int id) {
-	while(1) {
+	//while(1) {
 		ipcmsg msg;
-
+		printf("user_proc waiting for message\n");
 		if(msgrcv(msg_id, (void *)&msg, sizeof(ipcmsg), id + 1, 0) == -1) {
 			printf("error receving message\n");
 			exit(-1);
 		}
-
+		printf("user_proc receving message\n");
 		msg.mtype = msg.ossid;
 
 
@@ -59,24 +47,26 @@ void doit(int id) {
 			printf("oss msg not sent");
 		}
 		//id = foo;
-
+		printf("user_proc sent msg\n");
 		// if(operation == PT_TERMINATE) {
 		// 	printf("uproc terminated\n");
 		// 	kill(getpid(), SIGKILL);
 		// }
-	}
+	//}
 }
 
 void uprocInitialize(){
-	key_t sndkey = ftok(FTOK_BASE, FTOK_MSG);
+	// key_t sndkey = ftok(FTOK_BASE, FTOK_MSG);
+	//
+	// if (sndkey == -1) {
+	//
+	// 	snprintf(perror_buf, sizeof(perror_buf), "%s: ftok: ", perror_arg0);
+	// 	perror(perror_buf);
+	// }
+	//
+	// msg_id=msgget(sndkey, 0666 );
 
-	if (sndkey == -1) {
-
-		snprintf(perror_buf, sizeof(perror_buf), "%s: ftok: ", perror_arg0);
-		perror(perror_buf);
-	}
-
-	msg_id=msgget(sndkey, 0666 );
+	msg_id = initializeMessageQueue();
 }
 
 int getMemAddr(int id) {

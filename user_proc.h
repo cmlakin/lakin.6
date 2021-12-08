@@ -10,6 +10,6 @@ static int id;
 
 void uprocInitialize();
 void attachSharedMemory();
-int getMemAddr(int);
-
+void doit();
+void attachSharedMemory();int getMemAddr(int);
 void loop();

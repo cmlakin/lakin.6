@@ -11,7 +11,7 @@
 
 
 
-void initializeMessageQueue() {
+int initializeMessageQueue() {
 	// messages
 	key_t msgkey = ftok(FTOK_BASE, FTOK_MSG);
 
@@ -25,5 +25,5 @@ void initializeMessageQueue() {
 	if (msg_id == -1) {
 		printf("Error creating queue\n");
 	}
-
+  return msg_id;
 }
