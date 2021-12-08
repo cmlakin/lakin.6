@@ -7,7 +7,7 @@ typedef struct proc_ctrl_blck {
 	int local_pid;
   int pageNum;
   int dirtyBit;
-	int pages[32];
+	int pageTable[32];
 } PCB;
 
 typedef struct proc_table {
