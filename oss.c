@@ -180,7 +180,7 @@ PCB * createProcess() {
 void initialize() {
 	//createQueues();
 	initializeSharedMemory();
-	initializeMessageQueue();
+	msg_id = initializeMessageQueue();
   //initStats();
   ossClock();
 }

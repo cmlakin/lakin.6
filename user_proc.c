@@ -45,35 +45,27 @@ int main (int argc, char ** argv){
 void doit(int id) {
 	while(1) {
 		ipcmsg msg;
-
+		printf("user_proc waiting for msg from oss\n");
 		if(msgrcv(msg_id, (void *)&msg, sizeof(ipcmsg), id + 1, 0) == -1) {
 			printf("u_proc error receving message\n");
 			exit(-1);
 		}
+		printf("user_proc recv msg from oss\n");
 
 		msg.mtype = msg.ossid;
 
 		foo = id;
-
 		// strcpy(msg.mtext, strbuf);
 		// snprintf(&msg.mtext[0],sizeof(msg.mtext), "from %ld",  id);
 		if (msgsnd(msg_id, (void *)&msg, sizeof(msg), 0) == -1) {
 			printf("oss msg not sent");
 		}
-
+		printf("user_proc sent msg to oss\n");
 	}
 }
 
 void uprocInitialize(){
-	key_t sndkey = ftok(FTOK_BASE, FTOK_MSG);
-
-	if (sndkey == -1) {
-
-		snprintf(perror_buf, sizeof(perror_buf), "%s: ftok: ", perror_arg0);
-		perror(perror_buf);
-	}
-
-	msg_id=msgget(sndkey, 0666 );
+	msg_id = initializeMessageQueue() ;
 }
 
 int getMemAddr(int id) {
