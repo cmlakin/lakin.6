@@ -18,7 +18,7 @@ char strbuf[20];
 PCB * pcb;
 
 int main (int argc, char ** argv){
-		int id = atoi(argv[1]);
+	int id = atoi(argv[1]);
 
 	srand(getpid());
 
@@ -32,19 +32,20 @@ int main (int argc, char ** argv){
 void doit(int id) {
 	//while(1) {
 		ipcmsg msg;
+		printf("user_proc id = %i\n", id);
 		printf("user_proc waiting for message\n");
 		if(msgrcv(msg_id, (void *)&msg, sizeof(ipcmsg), id + 1, 0) == -1) {
 			printf("error receving message\n");
 			exit(-1);
 		}
 		printf("user_proc receving message\n");
-		msg.mtype = msg.ossid;
-
+		msg.ossid = msg.mtype + 100;
+		strcpy(msg.mtext, "bar");
 
 		// strcpy(msg.mtext, strbuf);
 		// snprintf(&msg.mtext[0],sizeof(msg.mtext), "from %ld",  id);
 		if (msgsnd(msg_id, (void *)&msg, sizeof(msg), 0) == -1) {
-			printf("oss msg not sent");
+			printf("user_proc msg not sent");
 		}
 		//id = foo;
 		printf("user_proc sent msg\n");

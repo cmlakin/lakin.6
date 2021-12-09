@@ -82,9 +82,9 @@ void memoryRequest(PCB *pcb) {
 
 	memset((void *)&send, 0, sizeof(send));
 	send.mtype = (pcb->local_pid & 0xff) + 1;
-	send.ossid = send.mtype;
+	send.ossid = send.mtype + 100;
 	strcpy(send.mtext, "foo");
-
+  printf("ossid %d\n", (int)send.ossid);
 	while (msgsnd(msg_id, (void *)&send, sizeof(send), 0) == -1) {
 		printf("oss: msg not sent to %d error %d\n", (int)send.mtype, errno);
 		sleep(1);
@@ -94,7 +94,7 @@ void memoryRequest(PCB *pcb) {
 	printf("msg_id %i\n", msg_id);
 
 	printf("oss: waiting for msg\n");
-
+  //sleep(1);
 	while(msgrcv(msg_id, (void *)&recv, sizeof(recv), send.ossid, 0) == -1) {
 		printf("oss: waiting for msg error %d\n", errno);
 	}
@@ -139,6 +139,11 @@ PCB * createProcess() {
         printf("\n");
 
         shm_data->local_pid++;
+
+        // initialize pcb pageTable to all -1's
+        for (i = 0; i < 32; i++) {
+          shm_data->ptab.pcb[pcbIndex].pageTable[i] = -1;
+        }
 
         snprintf(indBuf, sizeof(indBuf), "%d", pcbIndex);
         if (execl(CHILD_PROGRAM, CHILD_PROGRAM, indBuf, NULL) < 0) {
