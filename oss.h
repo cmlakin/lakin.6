@@ -24,7 +24,7 @@ extern int msg_id = -1;
 
 char perror_buf[50]; // buffer for perror
 
-static int shm_id = -1; // shared memory identifier
+//static int shm_id = -1; // shared memory identifier
 
 //int g_bitVector = 0;
 // char logbuf[200];

@@ -3,6 +3,7 @@
 
 
 int initializeMessageQueue();
+void mqDetach();
 
 // char perror_buf[50]; // buffer for perror
 // static char * perror_arg0 = "oss"; // pointer to return error value

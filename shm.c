@@ -68,5 +68,10 @@ shared_data * shmAttach() {
 }
 
 void shmDetach() {
+  shmctl(id, IPC_RMID, NULL);
+  if (shmdt(shm_data) == -1) {
+      snprintf(xperror_buf, sizeof(xperror_buf), "%s: shmdt: ", xperror_arg0);
+      perror(xperror_buf);
+  }
 
 }

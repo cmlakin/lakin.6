@@ -224,13 +224,13 @@ void ossClock() {
     printf("ossClock: clockInit %i:%i\n", osclock.seconds(), osclock.nanoseconds());
 }
 
-void deinitSharedMemory() {
-    if (shmdt(shm_data) == -1) {
-        snprintf(perror_buf, sizeof(perror_buf), "%s: shmdt: ", perror_arg0);
-        perror(perror_buf);
-    }
-    shmctl(shm_id, IPC_RMID, NULL);
-}
+// void deinitSharedMemory() {
+//     if (shmdt(shm_data) == -1) {
+//         snprintf(perror_buf, sizeof(perror_buf), "%s: shmdt: ", perror_arg0);
+//         perror(perror_buf);
+//     }
+//     shmctl(shm_id, IPC_RMID, NULL);
+// }
 
 void setBit(int b) {
     g_bitVector |= (1 << b);
@@ -253,7 +253,8 @@ void doSigHandler(int sig) {
 }
 
 void bail() {
-    deinitSharedMemory();
+    shmDetach();
+    mqDetach();
     kill(0, SIGTERM);
     exit(0);
 }

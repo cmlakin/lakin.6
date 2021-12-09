@@ -39,7 +39,8 @@ void doit(int id) {
 			exit(-1);
 		}
 		printf("user_proc receving message\n");
-		msg.ossid = msg.mtype + 100;
+		printf("suer_proc msg received: %s\n", msg.mtext);
+		msg.mtype = msg.mtype + 100;
 		strcpy(msg.mtext, "bar");
 
 		// strcpy(msg.mtext, strbuf);

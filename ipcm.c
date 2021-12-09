@@ -27,3 +27,10 @@ int initializeMessageQueue() {
 	}
   return msg_id;
 }
+
+void mqDetach() {
+  if (msgctl(msg_id, IPC_RMID, NULL) == -1) {
+		fprintf(stderr, "Message queue could not be deleted.\n");
+		exit(EXIT_FAILURE);
+	}
+}
