@@ -30,7 +30,10 @@
 
 #define MAX_TOT_PROCS 40
 #define PROCESSES 18
+#define FRAMES 256
+#define PAGES 32
 #define LOG_FILENAME "oss.log"
+#define CHILD_PROGRAM "user_proc"
 
 #define PROB_TERMINATE 3		// 30% of the time terminate if request not granted
 
@@ -54,15 +57,15 @@ static int allocatedProcs = 0;
 #define MSG_SEND_OSS 2
 #define MSG_RECV_OSS MSG_SEND_OSS
 
-message buffer
-typedef struct ipcmsg {
-	long mtype;
-	char mtext[MAX_TEXT];
-
-	int ossid;
-	int pRunSec;
-	int pRunNano;
-	int memRef; // adress request
-  int dirtyB; // read (0) or write (1)
-
-} ipcmsg;
+// message buffer
+// typedef struct ipcmsg {
+// 	long mtype;
+// 	char mtext[MAX_TEXT];
+//
+// 	int ossid;
+// 	int pRunSec;
+// 	int pRunNano;
+// 	int memRef; // adress request
+//   int dirtyB; // read (0) or write (1)
+//
+// } ipcmsg;

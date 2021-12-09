@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <time.h>
 #include "oss.h"
-#include "user_proc.h"
 #include "config.h"
 #include "shm.h"
-#include "deadlock.h"
-#include "resource.h"
+#include "ipcm.h"
+#include "memory.h"
+#include "user_proc.h"
 
 
 char perror_buf[50];
@@ -14,74 +14,73 @@ const char * perror_arg1 = "user_proc";
 static int shm_id;
 static int msg_id;
 
-void attachSharedMemory();
-
 char strbuf[20];
 PCB * pcb;
 
-void uprocInitialize();
-void doit();
-void attachSharedMemory();
-
-char strbuf[20];
-
-
 int main (int argc, char ** argv){
-	int ptype;
 	int id = atoi(argv[1]);
-
-	foo = id;
 
 	srand(getpid());
 
 
 	uprocInitialize();
 	attachSharedMemory();
-	ptype = getProcessType(id);
-	updateSharedCounters(ptype);
 	doit(id);
 	//uprocFinished(ptype);
 }
 
 void doit(int id) {
-	while(1) {
+	//while(1) {
 		ipcmsg msg;
-
+		printf("user_proc id = %i\n", id);
+		printf("user_proc waiting for message\n");
 		if(msgrcv(msg_id, (void *)&msg, sizeof(ipcmsg), id + 1, 0) == -1) {
 			printf("error receving message\n");
 			exit(-1);
 		}
-		operation = opType(ptype);
+		printf("user_proc receving message\n");
+		printf("suer_proc msg received: %s\n", msg.mtext);
+		msg.mtype = msg.mtype + 100;
+		strcpy(msg.mtext, "bar");
 
-		canUseNano = msg.pRunNano;
-		msg.pRunNano = canUseNano;
-		msg.mtype = msg.ossid;
-
-		msg.pOperation = operation;
 		// strcpy(msg.mtext, strbuf);
 		// snprintf(&msg.mtext[0],sizeof(msg.mtext), "from %ld",  id);
 		if (msgsnd(msg_id, (void *)&msg, sizeof(msg), 0) == -1) {
-			printf("oss msg not sent");
+			printf("user_proc msg not sent");
 		}
-		id = foo;
-
-		if(operation == PT_TERMINATE) {
-			printf("uproc terminated\n");
-			kill(getpid(), SIGKILL);
-		}
-	}
+		//id = foo;
+		printf("user_proc sent msg\n");
+		// if(operation == PT_TERMINATE) {
+		// 	printf("uproc terminated\n");
+		// 	kill(getpid(), SIGKILL);
+		// }
+	//}
 }
 
 void uprocInitialize(){
-	key_t sndkey = ftok(FTOK_BASE, FTOK_MSG);
+	// key_t sndkey = ftok(FTOK_BASE, FTOK_MSG);
+	//
+	// if (sndkey == -1) {
+	//
+	// 	snprintf(perror_buf, sizeof(perror_buf), "%s: ftok: ", perror_arg0);
+	// 	perror(perror_buf);
+	// }
+	//
+	// msg_id=msgget(sndkey, 0666 );
 
-	if (sndkey == -1) {
+	msg_id = initializeMessageQueue();
+}
 
-		snprintf(perror_buf, sizeof(perror_buf), "%s: ftok: ", perror_arg0);
-		perror(perror_buf);
-	}
+int getMemAddr(int id) {
+	srand(time(0));
+	shm_data->ptab.pcb[id].pageNum = rand() % 32 + 1;
+	printf("pageNum = %i\n", shm_data->ptab.pcb[id].pageNum);
+	int randOffset = rand() % 1023 + 1;
+	printf("randOffset = %i\n", randOffset);
+	int offset = shm_data->ptab.pcb[id].pageNum * 1024 + randOffset;
+	printf("offset = %i\n", offset);
 
-	msg_id=msgget(sndkey, 0666 );
+	return offset;
 }
 
 void loop(int id){
@@ -102,20 +101,20 @@ void loop(int id){
     }
   }
 
-  srand(time(0));
-  int randNum = rand() % 10 + 1;
-
-  if (randNum < PROB_RELEASE) {
-    releaseResources(id);
-  }
-  else if (randNum < PROB_TERMINATE) {
-    procTerminate(id);
-  }
-  else {
-    requestResources(id);
-  }
-  int randNano = rand() % 500000000;
-  updateClock(0, randNano);
+  // srand(time(0));
+  // int randNum = rand() % 10 + 1;
+	//
+  // if (randNum < PROB_RELEASE) {
+  //   releaseResources(id);
+  // }
+  // else if (randNum < PROB_TERMINATE) {
+  //   procTerminate(id);
+  // }
+  // else {
+  //   requestResources(id);
+  // }
+  // int randNano = rand() % 500000000;
+  // updateClock(0, randNano);
 
 }
 

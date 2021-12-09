@@ -24,7 +24,7 @@ extern int msg_id = -1;
 
 char perror_buf[50]; // buffer for perror
 
-static int shm_id = -1; // shared memory identifier
+//static int shm_id = -1; // shared memory identifier
 
 //int g_bitVector = 0;
 // char logbuf[200];
@@ -33,14 +33,12 @@ pid_t pid;
 
 void initialize();
 void initializeSharedMemory();
-void initializeMessageQueue();
+//void initializeMessageQueue();
 struct proc_ctrl_blck  * createProcess();
 
 void createMessageQueue();
 void launchNewProc();
 void ossClock();
-// void updateClock(int, int);
-// void logger(const char *);
 void deinitSharedMemory();
 void setBit(int);
 bool bitIsSet(int);
@@ -52,3 +50,4 @@ void scheduler();
 int findAvailablePcb(void);
 void printStats();
 void initStats();
+void memoryRequest();

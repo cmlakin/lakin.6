@@ -8,16 +8,16 @@ all: oss user_proc
 clean:
 	rm *.o oss user_proc
 
-oss: oss.o queue.o osclock.o shm.o logger.o
-	$(GCC) $(CFLAGS) oss.o queue.o osclock.o shm.o logger.o -o oss
+oss: oss.o queue.o osclock.o shm.o logger.o ipcm.o memory.o
+	$(GCC) $(CFLAGS) oss.o queue.o osclock.o shm.o logger.o ipcm.o -o oss
 
 oss.o: oss.c oss.h config.h osclock.h
 	$(GCC) $(CFLAGS) -c oss.c
 
-user_proc: user_proc.o shm.o logger.o osclock.o queue.o
-	$(GCC)  $(CFLAGS) user_proc.o shm.o logger.o osclock.o queue.o -o user_proc
+user_proc: user_proc.o shm.o logger.o osclock.o queue.o ipcm.o memory.o
+	$(GCC)  $(CFLAGS) user_proc.o shm.o logger.o osclock.o queue.o ipcm.o -o user_proc
 
-user_proc.o: user_proc.c oss.h
+user_proc.o: user_proc.c user_proc.h
 	$(GCC) $(CFLAGS) -c user_proc.c
 
 osclock.o: osclock.c osclock.h shm.h
@@ -34,3 +34,6 @@ logger.o: logger.c logger.h
 
 memory.o: memory.c memory.h
 	$(GCC) $(CFLAGS) -c memory.c
+
+ipcm.o: ipcm.c ipcm.h config.h
+	$(GCC) $(CFLAGS) -c ipcm.c
