@@ -42,9 +42,11 @@ void doit(int id) {
 		printf("suer_proc msg received: %s\n", msg.mtext);
 		msg.mtype = msg.mtype + 100;
 		int request = getMemAddr();
-		printf("after getMemAddr\n");
-		snprintf(msg.mtext, "%s", request);
-
+		setDirtyBit();
+		//printf("after getMemAddr\n");
+		//snprintf(msg.mtext, "%s", request);
+		msg.memRef = request;
+		printf("memref = %i\n", msg.memRef);
 
 		// strcpy(msg.mtext, strbuf);
 		// snprintf(&msg.mtext[0],sizeof(msg.mtext), "from %ld",  id);
@@ -74,6 +76,14 @@ int getMemAddr() {
 	printf("memReq = %i\n", memReq);
 
 	return memReq;
+}
+
+void setDirtyBit(int id) {
+	srand(time(0));
+	int randDB = rand() % 1;
+
+	shm_data->ptab.pcb[id].dirtyBit = randDB;
+
 }
 
 void loop(int id){

@@ -82,7 +82,7 @@ void memoryRequest(PCB *pcb) {
 
 	memset((void *)&send, 0, sizeof(send));
 	send.mtype = (pcb->local_pid & 0xff) + 1;
-	send.ossid = send.mtype + 100;
+  send.ossid = send.mtype + 100;
 	strcpy(send.mtext, "foo");
   printf("ossid %d\n", (int)send.ossid);
 	while (msgsnd(msg_id, (void *)&send, sizeof(send), 0) == -1) {
@@ -101,6 +101,11 @@ void memoryRequest(PCB *pcb) {
 
 	printf("oss msg received: %s\n", recv.mtext);
 
+  // calculate page number
+  int pNum = recv.memRef;
+  printf("pNum = %i\n", pNum);
+  pNum /= 1024;
+  printf("pNum = %i\n", pNum);
 
 
 }
@@ -168,18 +173,15 @@ void initialize() {
 }
 
 void initStats() {
-  int memPerSec = 0;
-  int pageFault = 0;
-  int avgMemAccessSpd = 0;
+  shm_data->memPerSec = 0;
+  shm_data->pageFault = 0;
+  shm_data->avgMemAccessSpd = 0;
 }
-/*** rewrite statements ***/
+
 // void printStats() {
-//   printf("Number of times granted resource immediately: %02d\n", shm_data->grantNow);
-//   printf("Number of times granted resource after waiting: %02d\n", shm_data->grantWait);
-//   printf("Number of processes terminated by deadlock algorithm: %02d\n", shm_data->procTbyDlck);
-//   printf("Number of processes who chose to terminate: %02d\n", shm_data->procChoseT);
-//   printf("Number of times deadlock algorithm ran: %02d\n", shm_data->numDlckRun);
-//   float avg = shm_data->avgTbyDlck / (float)totalProcesses;
+//   printf("Number of memory requests per second: %02d\n", shm_data->memPerSec);
+//   printf("Number of page faults: %02d\n", shm_data->pageFault);
+//   float avg = shm_data->avgMemAccessSpd / (float)totalProcesses;
 //   printf("Average of processes terminated by deadlock algorithm: %.2f%%\n", avg);
 // }
 
@@ -204,6 +206,26 @@ int findAvailablePcb(void) {
     return -1;
 }
 
+void getPageRequest(PCB * pcb) {
+
+}
+void checkPageTable(int id, int pNum){
+
+  if (shm_data->ptab.pcb[id].pageTable[pNum] == -1) {
+    shm_data->pageFault += 1;
+    //addToFrame(id, pNum);
+  }
+  else {
+    //grant request
+  }
+
+
+}
+
+void updatePageTable(){
+
+}
+
 void launchNewProc() {
     //set new launch values;
     shm_data->launchSec = rand() % maxTimeBetweenNewProcsSecs + 1;
@@ -215,8 +237,6 @@ void launchNewProc() {
     shm_data->launchNano += osclock.nanoseconds();
     // printf("new launch %i.%i\n", shm_data->launchSec, shm_data->launchNano);
 }
-
-
 
 void ossClock() {
     // set up initial clock values operated by oss

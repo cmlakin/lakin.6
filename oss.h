@@ -51,3 +51,6 @@ int findAvailablePcb(void);
 void printStats();
 void initStats();
 void memoryRequest();
+void getPageRequest();
+void checkPageTable();
+void updatePageTable();
