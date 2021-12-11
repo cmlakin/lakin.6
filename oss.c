@@ -18,6 +18,7 @@
 #include "ipcm.h"
 #include "logger.h"
 #include "memory.h"
+#include "queue.h"
 #include "oss.h"
 
 int main(int argc, char ** argv){
@@ -33,9 +34,9 @@ int main(int argc, char ** argv){
         osclock.add(shm_data->launchSec, shm_data->launchNano);
     }
 
-    //while (totalProcesses < 5) {
+    while (totalProcesses < 5) {
       scheduler();
-    //}
+    }
 
     sleep(1);
 
@@ -54,10 +55,10 @@ void scheduler() {
     //int pInd = foo->local_pid & 0xff;
     // printf("pInd = %i\n", pInd);
 
-    // while (totalProcesses < MAX_TOT_PROCS) {
+    // while (totalProcesses < 5) {//MAX_TOT_PROCS) {
     //
     //
-    //   if (shm_data->activeProcs < PROCESSES) {
+    //   if (shm_data->activeProcs < 5) {//PROCESSES) {
     //     int create = osclock.seconds() > shm_data->launchSec;
     //
     //     if(!create && osclock.seconds()) {
@@ -83,9 +84,11 @@ void memoryRequest(PCB *pcb) {
 	struct ipcmsg send;
 	struct ipcmsg recv;
   int id = pcb->local_pid & 0xff;
+  printf("local_pid = %i\n", id);
 
 	memset((void *)&send, 0, sizeof(send));
 	send.mtype = (pcb->local_pid & 0xff) + 1;
+  printf("mtype = %li\n", send.mtype);
   send.ossid = send.mtype + 100;
 	strcpy(send.mtext, "foo");
   printf("ossid %d\n", (int)send.ossid);
@@ -106,7 +109,7 @@ void memoryRequest(PCB *pcb) {
 	printf("oss msg received: %s\n", recv.mtext);
 
   char * dbit = 0;
-  printf("msg dirty bit = %i\n", recv.dirtyBit);
+  //printf("msg dirty bit = %i\n", recv.dirtyBit);
   if(recv.dirtyBit == 0) {
     dbit = "read";
   }
@@ -122,16 +125,16 @@ void memoryRequest(PCB *pcb) {
 
   // calculate page number
   int addr = recv.memRef;
-  printf("addr = %i\n", addr);
+  //printf("addr = %i\n", addr);
   int pNum = addr / 1024;
-  printf("pNum = %i\n", pNum);
+  //printf("pNum = %i\n", pNum);
 
   int dirtyBit = recv.dirtyBit;
 
 
   checkRequest(id, pNum, dirtyBit, dbit, addr);
 
-  printf("after checkRequest()\n");
+  //printf("after checkRequest()\n");
   //printFrames();
 
 }
@@ -147,6 +150,7 @@ PCB * createProcess() {
 
     // find available pcb and initialize first values
     int pcbIndex = findAvailablePcb();
+    printf("pcbIndex = %i\n", pcbIndex);
     if(pcbIndex == -1) {
         printf("oss: createProcess: no free pcbs\n");
         return NULL;
@@ -156,6 +160,8 @@ PCB * createProcess() {
     allocatedProcs++;
 
     pcb = &shm_data->ptab.pcb[pcbIndex];
+    shm_data->local_pid++;
+    pcb->local_pid =  pcbIndex;
 
     pid = pcb->pid = fork();
 
@@ -163,8 +169,6 @@ PCB * createProcess() {
         perror("Failed to create new process\n");
         return NULL;
     } else if (pid == 0) {
-        pcb->local_pid = shm_data->local_pid << 8 | pcbIndex;
-        shm_data->local_pid++;
 
         // initialize pcb pageTable to all -1's
         int i;
@@ -188,11 +192,13 @@ PCB * createProcess() {
 
 void initialize() {
 	//createQueues();
+  initializeSig();
 	initializeSharedMemory();
 	msg_id = initializeMessageQueue();
   initializeFT();
-  //initStats();
+  initStats();
   ossClock();
+  shm_data->activeProcs = 0;
 }
 
 void initStats() {
@@ -240,7 +246,7 @@ void initializeFT(){
 int addFrame(int id, int pNum, int dirtyBit) {
   //FT * frameTable;
   int j, frameNum;
-
+  printf("***** adding frame for p%i\n", id);
   for (j = 0; j < 256; j++) {
       if (ft.frameTable[0][j] == -1){
         frameNum = j;
@@ -258,20 +264,22 @@ int addFrame(int id, int pNum, int dirtyBit) {
         frameNum = -1;
       }
   }
-
+  osclock.add(0, 1000);
   printFrames();
 
-  removeFrame(frameNum, id, pNum);
-  printFrames();
+  // removeFrame(frameNum, id, pNum);
+  // printFrames();
   return frameNum;
 }
 
 int removeFrame(int fNum, int id, int pNum){
+  printf("**** removing frame for p%i\n", id);
   ft.frameTable[0][fNum] = -1;
   ft.frameTable[1][fNum] = -1;
   ft.frameTable[2][fNum] = 0;//dirtyBit;
   // update pcb pageTable with frame number (j value)
   shm_data->ptab.pcb[id].pageTable[pNum] = -1;
+  osclock.add(0, 15000);
   return fNum;
 }
 
@@ -293,12 +301,15 @@ void printFrames() {
 }
 
 void checkRequest(int id, int pNum, int dirtyBit, char * dbit, int addr){
+  srand(time(0));
   printf("page table value = %i\n", shm_data->ptab.pcb[id].pageTable[pNum]);
   // check page table
   if (shm_data->ptab.pcb[id].pageTable[pNum] == -1) {
-    shm_data->pageFault += 1;
-    addFrame(id, pNum, dirtyBit);
     osclock.add(0, 14000000);
+    shm_data->pageFault += 1;
+    enqueue(0, id, pNum, dirtyBit);
+    addFrame(id, pNum, dirtyBit);
+
     snprintf(logbuf, sizeof(logbuf),
             "Master: Address %i is not in a frame, pagefault\n", addr);
 
@@ -306,31 +317,32 @@ void checkRequest(int id, int pNum, int dirtyBit, char * dbit, int addr){
   }
   else {
     //grant request
-
     snprintf(logbuf, sizeof(logbuf),
-            "Master: Address in frame %i, giving data to P%i at time %i:%i\n",
-            shm_data->ptab.pcb[id].pageTable[pNum], id, osclock.seconds(),
+            "Master: Address in frame %i, giving %s data to P%i at time %i:%i\n",
+            shm_data->ptab.pcb[id].pageTable[pNum], dbit, id, osclock.seconds(),
             osclock.nanoseconds());
 
     logger(logbuf);
 
-    if (dirtyBit == 1) {
-      snprintf(logbuf, sizeof(logbuf),
-              "Master: Dirty bit of frame %i set, adding additional time to the clock\n",
-                shm_data->ptab.pcb[id].pageTable[pNum]);
+    osclock.add(0, 5000000);
 
-      logger(logbuf);
-      osclock.add(0, 5000000);
-      snprintf(logbuf, sizeof(logbuf),
-              "Master: Indicating to P%i that %s has happened to address %i\n",
-              id, dbit, addr);
+      if (dirtyBit == 1) {
+        snprintf(logbuf, sizeof(logbuf),
+                "Master: Dirty bit of frame %i set, adding additional time to the clock\n",
+                  shm_data->ptab.pcb[id].pageTable[pNum]);
 
-      logger(logbuf);
-      osclock.add(0, 5000000);
-    }
-    else {
-      osclock.add(0, 10);
-    }
+        logger(logbuf);
+        osclock.add(0, 5);
+        snprintf(logbuf, sizeof(logbuf),
+                "Master: Indicating to P%i that %s has happened to address %i\n",
+                id, dbit, addr);
+
+        logger(logbuf);
+
+      }
+      else {
+        osclock.add(0, 10);
+      }
   }
 
   printf("page faults = %i\n", shm_data->pageFault);
@@ -402,12 +414,11 @@ void sigHandler(const int sig) {
 
     if (sig == SIGINT) {
         printf("oss[%d]: Ctrl-C received\n", getpid());
-        bail();
     }
     else if (sig == SIGALRM) {
         printf("oss[%d]: Alarm raised\n", getpid());
-        bail();
     }
+    bail();
     sigprocmask(SIG_SETMASK, &oldmask, NULL);
 }
 

@@ -35,7 +35,7 @@
 #define LOG_FILENAME "oss.log"
 #define CHILD_PROGRAM "user_proc"
 
-#define PROB_TERMINATE 3		// 30% of the time terminate if request not granted
+#define PROB_DIRTY_BIT 3		// 30% of the time write request
 
 #define NEW_PROC_MAX_SECS 2
 #define NEW_PROC_MAX_NANO 1000000000

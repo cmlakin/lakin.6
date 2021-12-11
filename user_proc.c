@@ -43,11 +43,11 @@ void doit(int id) {
 		msg.mtype = msg.mtype + 100;
 		int request = getMemAddr();
 		//printf("after getMemAddr\n");
-		
+
 		msg.memRef = request;
 		msg.dirtyBit = setDirtyBit(id);
 		printf("memref = %i\n", msg.memRef);
-
+		strcpy(msg.mtext, "bar");
 		// strcpy(msg.mtext, strbuf);
 		// snprintf(&msg.mtext[0],sizeof(msg.mtext), "from %ld",  id);
 		if (msgsnd(msg_id, (void *)&msg, sizeof(msg), 0) == -1) {
@@ -67,7 +67,7 @@ void uprocInitialize(){
 }
 
 int getMemAddr() {
-	srand(time(0));
+	//srand(time(0));
 	int pageNum = rand() % 32 + 1;
 	printf("pageNum = %i\n", pageNum);
 	int offset = rand() % 1023 + 1;
@@ -79,8 +79,16 @@ int getMemAddr() {
 }
 
 int setDirtyBit(int id) {
-	srand(time(0));
-	int randDB = rand() % 1;
+	//srand(time(0));
+	int randDB = rand() % 10;
+	printf("---randDB = %i\n", randDB);
+
+	if (randDB < PROB_DIRTY_BIT) {
+		randDB = 1;
+	}
+	else {
+		randDB = 0;
+	}
 
 	return randDB;
 }
