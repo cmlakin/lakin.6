@@ -11,7 +11,7 @@
 
 char perror_buf[50];
 const char * perror_arg1 = "user_proc";
-static int shm_id;
+//static int shm_id;
 static int msg_id;
 
 char strbuf[20];
@@ -42,10 +42,10 @@ void doit(int id) {
 		printf("suer_proc msg received: %s\n", msg.mtext);
 		msg.mtype = msg.mtype + 100;
 		int request = getMemAddr();
-		setDirtyBit();
 		//printf("after getMemAddr\n");
-		//snprintf(msg.mtext, "%s", request);
+		
 		msg.memRef = request;
+		msg.dirtyBit = setDirtyBit(id);
 		printf("memref = %i\n", msg.memRef);
 
 		// strcpy(msg.mtext, strbuf);
@@ -78,12 +78,11 @@ int getMemAddr() {
 	return memReq;
 }
 
-void setDirtyBit(int id) {
+int setDirtyBit(int id) {
 	srand(time(0));
 	int randDB = rand() % 1;
 
-	shm_data->ptab.pcb[id].dirtyBit = randDB;
-
+	return randDB;
 }
 
 void loop(int id){

@@ -6,8 +6,7 @@ typedef struct proc_ctrl_blck {
 	int pid;
 	int local_pid;
   int pageNum;
-  int dirtyBit;
-	int pageTable[32];
+  int pageTable[32];
 } PCB;
 
 typedef struct proc_table {

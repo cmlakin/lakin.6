@@ -13,4 +13,5 @@ void attachSharedMemory();
 void doit();
 void attachSharedMemory();
 int getMemAddr();
+int setDirtyBit(int);
 void loop();

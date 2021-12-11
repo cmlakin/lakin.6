@@ -31,6 +31,11 @@ char perror_buf[50]; // buffer for perror
 char indBuf[2];
 pid_t pid;
 
+typedef struct frame_table {
+  int frameTable[3][256];
+} FT;
+
+FT ft;
 void initialize();
 void initializeSharedMemory();
 //void initializeMessageQueue();
@@ -51,6 +56,10 @@ int findAvailablePcb(void);
 void printStats();
 void initStats();
 void memoryRequest();
-void getPageRequest();
-void checkPageTable();
+void checkRequest(int, int, int, char *, int);
 void updatePageTable();
+int addFrame(int, int, int);
+int removeFrame(int, int, int);
+void initializeFT();
+void printFrames();
+void swapFrames();
