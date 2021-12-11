@@ -79,8 +79,16 @@ int getMemAddr() {
 }
 
 int setDirtyBit(int id) {
-	srand(time(0));
-	int randDB = rand() % 2;
+	//srand(time(0));
+	int randDB = rand() % 10;
+	printf("---randDB = %i\n", randDB);
+
+	if (randDB < PROB_DIRTY_BIT) {
+		randDB = 1;
+	}
+	else {
+		randDB = 0;
+	}
 
 	return randDB;
 }

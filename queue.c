@@ -4,29 +4,31 @@
 #include "queue.h"
 
 
-Queue all_queues[576];
+Queue all_queues[1];
 
 int queueShift(Queue * queue);
-void queuePush(Queue * queue, int processId);
+void queuePush(Queue * queue, int processId, int page, int dirty);
 
-queueItem * newItem(int processId) {
+queueItem * newItem(int processId, int page, int dirty) {
     queueItem * new = (queueItem *)malloc(sizeof(queueItem));
 
     new->next = NULL;
     new->processId = processId;
+    new->page = page;
+    new->dirty = dirty;
     return new;
 }
 
-void enqueue(int index, int processId) {
-    queuePush(&all_queues[index], processId);
+void enqueue(int index, int processId, int page, int dirty) {
+    queuePush(&all_queues[index], processId, page, dirty);
 }
 
 int dequeue(int index) {
     return queueShift(&all_queues[index]);
 }
 
-void queuePush(Queue * queue, int processId) {
-    queueItem  * new = newItem(processId);
+void queuePush(Queue * queue, int processId, int page, int dirty) {
+    queueItem  * new = newItem(processId, page, dirty);
 
 
     // printf("push head %x tail %lx\n", (int)q->head, (long)q->tail);

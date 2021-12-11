@@ -33,7 +33,7 @@ int main(int argc, char ** argv){
         osclock.add(shm_data->launchSec, shm_data->launchNano);
     }
 
-    while (totalProcesses < 2) {
+    while (totalProcesses < 5) {
       scheduler();
     }
 
@@ -87,7 +87,7 @@ void memoryRequest(PCB *pcb) {
 
 	memset((void *)&send, 0, sizeof(send));
 	send.mtype = (pcb->local_pid & 0xff) + 1;
-  printf("mtype = %i\n", send.mtype);
+  printf("mtype = %li\n", send.mtype);
   send.ossid = send.mtype + 100;
 	strcpy(send.mtext, "foo");
   printf("ossid %d\n", (int)send.ossid);
@@ -131,7 +131,7 @@ void memoryRequest(PCB *pcb) {
   int dirtyBit = recv.dirtyBit;
 
 
-  //checkRequest(id, pNum, dirtyBit, dbit, addr);
+  checkRequest(id, pNum, dirtyBit, dbit, addr);
 
   //printf("after checkRequest()\n");
   //printFrames();
@@ -160,14 +160,14 @@ PCB * createProcess() {
 
     pcb = &shm_data->ptab.pcb[pcbIndex];
     shm_data->local_pid++;
+    pcb->local_pid =  pcbIndex;
+
     pid = pcb->pid = fork();
 
     if (pid == -1) {
         perror("Failed to create new process\n");
         return NULL;
     } else if (pid == 0) {
-        pcb->local_pid =  pcbIndex;
-
 
         // initialize pcb pageTable to all -1's
         int i;
@@ -306,6 +306,7 @@ void checkRequest(int id, int pNum, int dirtyBit, char * dbit, int addr){
   if (shm_data->ptab.pcb[id].pageTable[pNum] == -1) {
     osclock.add(0, 14000000);
     shm_data->pageFault += 1;
+    enqueue(0, id, pNum, dirtyBit);
     addFrame(id, pNum, dirtyBit);
 
     snprintf(logbuf, sizeof(logbuf),
