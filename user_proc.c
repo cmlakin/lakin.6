@@ -67,7 +67,7 @@ void uprocInitialize(){
 }
 
 int getMemAddr() {
-	srand(time(0));
+	//srand(time(0));
 	int pageNum = rand() % 32 + 1;
 	printf("pageNum = %i\n", pageNum);
 	int offset = rand() % 1023 + 1;

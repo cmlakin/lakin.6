@@ -18,6 +18,7 @@
 #include "ipcm.h"
 #include "logger.h"
 #include "memory.h"
+#include "queue.h"
 #include "oss.h"
 
 int main(int argc, char ** argv){
@@ -54,10 +55,10 @@ void scheduler() {
     //int pInd = foo->local_pid & 0xff;
     // printf("pInd = %i\n", pInd);
 
-    // while (totalProcesses < MAX_TOT_PROCS) {
+    // while (totalProcesses < 5) {//MAX_TOT_PROCS) {
     //
     //
-    //   if (shm_data->activeProcs < PROCESSES) {
+    //   if (shm_data->activeProcs < 5) {//PROCESSES) {
     //     int create = osclock.seconds() > shm_data->launchSec;
     //
     //     if(!create && osclock.seconds()) {
