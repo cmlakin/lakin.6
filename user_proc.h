@@ -11,5 +11,7 @@ static int id;
 void uprocInitialize();
 void attachSharedMemory();
 void doit();
-void attachSharedMemory();int getMemAddr(int);
+void attachSharedMemory();
+int getMemAddr();
+int setDirtyBit(int);
 void loop();

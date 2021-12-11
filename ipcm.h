@@ -15,6 +15,6 @@ typedef struct ipcmsg {
 	char mtext[MAX_TEXT];
   int ossid;
 	int memRef; // adress request
-  int dirtyB; // read (0) or write (1)
+  int dirtyBit; // read (0) or write (1)
 
 } ipcmsg;

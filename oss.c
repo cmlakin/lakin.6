@@ -24,6 +24,7 @@ int main(int argc, char ** argv){
 
     unlink(LOG_FILENAME);
     srand(getpid());
+    //FT ft;
 
     initialize();
 
@@ -32,7 +33,9 @@ int main(int argc, char ** argv){
         osclock.add(shm_data->launchSec, shm_data->launchNano);
     }
 
-    scheduler();
+    //while (totalProcesses < 5) {
+      scheduler();
+    //}
 
     sleep(1);
 
@@ -79,10 +82,11 @@ void memoryRequest(PCB *pcb) {
 	// create msg to send to uproc
 	struct ipcmsg send;
 	struct ipcmsg recv;
+  int id = pcb->local_pid & 0xff;
 
 	memset((void *)&send, 0, sizeof(send));
 	send.mtype = (pcb->local_pid & 0xff) + 1;
-	send.ossid = send.mtype + 100;
+  send.ossid = send.mtype + 100;
 	strcpy(send.mtext, "foo");
   printf("ossid %d\n", (int)send.ossid);
 	while (msgsnd(msg_id, (void *)&send, sizeof(send), 0) == -1) {
@@ -101,7 +105,34 @@ void memoryRequest(PCB *pcb) {
 
 	printf("oss msg received: %s\n", recv.mtext);
 
+  char * dbit = 0;
+  printf("msg dirty bit = %i\n", recv.dirtyBit);
+  if(recv.dirtyBit == 0) {
+    dbit = "read";
+  }
+  else {
+    dbit = "write";
+  }
+  snprintf(logbuf, sizeof(logbuf),
+          "Master P%i is requesting %s of address %i at time %0d:%09d\n",
+            pcb->local_pid & 0xff, dbit, recv.memRef,
+            osclock.seconds(), osclock.nanoseconds());
 
+  logger(logbuf);
+
+  // calculate page number
+  int addr = recv.memRef;
+  printf("addr = %i\n", addr);
+  int pNum = addr / 1024;
+  printf("pNum = %i\n", pNum);
+
+  int dirtyBit = recv.dirtyBit;
+
+
+  checkRequest(id, pNum, dirtyBit, dbit, addr);
+
+  printf("after checkRequest()\n");
+  //printFrames();
 
 }
 
@@ -133,14 +164,10 @@ PCB * createProcess() {
         return NULL;
     } else if (pid == 0) {
         pcb->local_pid = shm_data->local_pid << 8 | pcbIndex;
-        srand(time(0));
-        int i;
-        int max = 0;
-        printf("\n");
-
         shm_data->local_pid++;
 
         // initialize pcb pageTable to all -1's
+        int i;
         for (i = 0; i < 32; i++) {
           shm_data->ptab.pcb[pcbIndex].pageTable[i] = -1;
         }
@@ -151,9 +178,9 @@ PCB * createProcess() {
           exit(EXIT_FAILURE);
         }
     }
+    srand(time(0));
     int randNano = rand() % 500000000;
   	updateClock(0, randNano);
-
 
     osclock.add(0,1);
     return pcb;
@@ -163,23 +190,21 @@ void initialize() {
 	//createQueues();
 	initializeSharedMemory();
 	msg_id = initializeMessageQueue();
+  initializeFT();
   //initStats();
   ossClock();
 }
 
 void initStats() {
-  int memPerSec = 0;
-  int pageFault = 0;
-  int avgMemAccessSpd = 0;
+  shm_data->memPerSec = 0;
+  shm_data->pageFault = 0;
+  shm_data->avgMemAccessSpd = 0;
 }
-/*** rewrite statements ***/
+
 // void printStats() {
-//   printf("Number of times granted resource immediately: %02d\n", shm_data->grantNow);
-//   printf("Number of times granted resource after waiting: %02d\n", shm_data->grantWait);
-//   printf("Number of processes terminated by deadlock algorithm: %02d\n", shm_data->procTbyDlck);
-//   printf("Number of processes who chose to terminate: %02d\n", shm_data->procChoseT);
-//   printf("Number of times deadlock algorithm ran: %02d\n", shm_data->numDlckRun);
-//   float avg = shm_data->avgTbyDlck / (float)totalProcesses;
+//   printf("Number of memory requests per second: %02d\n", shm_data->memPerSec);
+//   printf("Number of page faults: %02d\n", shm_data->pageFault);
+//   float avg = shm_data->avgMemAccessSpd / (float)totalProcesses;
 //   printf("Average of processes terminated by deadlock algorithm: %.2f%%\n", avg);
 // }
 
@@ -204,6 +229,117 @@ int findAvailablePcb(void) {
     return -1;
 }
 
+void initializeFT(){
+  int i;
+
+  for (i = 0; i < 256; i++) {
+    ft.frameTable[0][i] = -1;
+  }
+}
+
+int addFrame(int id, int pNum, int dirtyBit) {
+  //FT * frameTable;
+  int j, frameNum;
+
+  for (j = 0; j < 256; j++) {
+      if (ft.frameTable[0][j] == -1){
+        frameNum = j;
+        // add process, page num, and dirty bit to frame table
+        ft.frameTable[0][j] = id;
+        ft.frameTable[1][j] = pNum;
+        ft.frameTable[2][j] = dirtyBit;//dirtyBit;
+        // update pcb pageTable with frame number (j value)
+        shm_data->ptab.pcb[id].pageTable[pNum] = frameNum;
+        // add time to clock appropriately
+        // exit
+        break;
+      }
+      else {
+        frameNum = -1;
+      }
+  }
+
+  printFrames();
+
+  removeFrame(frameNum, id, pNum);
+  printFrames();
+  return frameNum;
+}
+
+int removeFrame(int fNum, int id, int pNum){
+  ft.frameTable[0][fNum] = -1;
+  ft.frameTable[1][fNum] = -1;
+  ft.frameTable[2][fNum] = 0;//dirtyBit;
+  // update pcb pageTable with frame number (j value)
+  shm_data->ptab.pcb[id].pageTable[pNum] = -1;
+  return fNum;
+}
+
+void printFrames() {
+  printf("Current memory layout at time %i:%i is:\n", osclock.seconds(), osclock.nanoseconds());
+  printf("\t   Occupied  DirtyBit\n");
+  int j;
+
+  for (j = 0; j < 6; j++) {
+    printf("Frame %03d:", j);
+
+    if (ft.frameTable[0][j] == -1){
+      printf(" No \t     %i\n", ft.frameTable[2][j]);
+    }
+    else {
+      printf(" Yes \t     %i\n", ft.frameTable[2][j]);
+    }
+  }
+}
+
+void checkRequest(int id, int pNum, int dirtyBit, char * dbit, int addr){
+  printf("page table value = %i\n", shm_data->ptab.pcb[id].pageTable[pNum]);
+  // check page table
+  if (shm_data->ptab.pcb[id].pageTable[pNum] == -1) {
+    shm_data->pageFault += 1;
+    addFrame(id, pNum, dirtyBit);
+    osclock.add(0, 14000000);
+    snprintf(logbuf, sizeof(logbuf),
+            "Master: Address %i is not in a frame, pagefault\n", addr);
+
+    logger(logbuf);
+  }
+  else {
+    //grant request
+
+    snprintf(logbuf, sizeof(logbuf),
+            "Master: Address in frame %i, giving data to P%i at time %i:%i\n",
+            shm_data->ptab.pcb[id].pageTable[pNum], id, osclock.seconds(),
+            osclock.nanoseconds());
+
+    logger(logbuf);
+
+    if (dirtyBit == 1) {
+      snprintf(logbuf, sizeof(logbuf),
+              "Master: Dirty bit of frame %i set, adding additional time to the clock\n",
+                shm_data->ptab.pcb[id].pageTable[pNum]);
+
+      logger(logbuf);
+      osclock.add(0, 5000000);
+      snprintf(logbuf, sizeof(logbuf),
+              "Master: Indicating to P%i that %s has happened to address %i\n",
+              id, dbit, addr);
+
+      logger(logbuf);
+      osclock.add(0, 5000000);
+    }
+    else {
+      osclock.add(0, 10);
+    }
+  }
+
+  printf("page faults = %i\n", shm_data->pageFault);
+}
+
+void updatePageTable(){
+
+}
+
 void launchNewProc() {
     //set new launch values;
     shm_data->launchSec = rand() % maxTimeBetweenNewProcsSecs + 1;
@@ -215,8 +351,6 @@ void launchNewProc() {
     shm_data->launchNano += osclock.nanoseconds();
     // printf("new launch %i.%i\n", shm_data->launchSec, shm_data->launchNano);
 }
-
-
 
 void ossClock() {
     // set up initial clock values operated by oss

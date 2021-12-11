@@ -28,7 +28,7 @@
 #define FTOK_MSG 2
 #define FTOK_BASE "oss.c"
 
-#define MAX_TOT_PROCS 40
+#define MAX_TOT_PROCS 30
 #define PROCESSES 18
 #define FRAMES 256
 #define PAGES 32

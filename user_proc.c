@@ -11,7 +11,7 @@
 
 char perror_buf[50];
 const char * perror_arg1 = "user_proc";
-static int shm_id;
+//static int shm_id;
 static int msg_id;
 
 char strbuf[20];
@@ -41,7 +41,12 @@ void doit(int id) {
 		printf("user_proc receving message\n");
 		printf("suer_proc msg received: %s\n", msg.mtext);
 		msg.mtype = msg.mtype + 100;
-		strcpy(msg.mtext, "bar");
+		int request = getMemAddr();
+		//printf("after getMemAddr\n");
+		
+		msg.memRef = request;
+		msg.dirtyBit = setDirtyBit(id);
+		printf("memref = %i\n", msg.memRef);
 
 		// strcpy(msg.mtext, strbuf);
 		// snprintf(&msg.mtext[0],sizeof(msg.mtext), "from %ld",  id);
@@ -58,29 +63,26 @@ void doit(int id) {
 }
 
 void uprocInitialize(){
-	// key_t sndkey = ftok(FTOK_BASE, FTOK_MSG);
-	//
-	// if (sndkey == -1) {
-	//
-	// 	snprintf(perror_buf, sizeof(perror_buf), "%s: ftok: ", perror_arg0);
-	// 	perror(perror_buf);
-	// }
-	//
-	// msg_id=msgget(sndkey, 0666 );
-
 	msg_id = initializeMessageQueue();
 }
 
-int getMemAddr(int id) {
+int getMemAddr() {
 	srand(time(0));
-	shm_data->ptab.pcb[id].pageNum = rand() % 32 + 1;
-	printf("pageNum = %i\n", shm_data->ptab.pcb[id].pageNum);
-	int randOffset = rand() % 1023 + 1;
-	printf("randOffset = %i\n", randOffset);
-	int offset = shm_data->ptab.pcb[id].pageNum * 1024 + randOffset;
-	printf("offset = %i\n", offset);
+	int pageNum = rand() % 32 + 1;
+	printf("pageNum = %i\n", pageNum);
+	int offset = rand() % 1023 + 1;
+	printf("randOffset = %i\n", offset);
+	int memReq = pageNum * 1024 + offset;
+	printf("memReq = %i\n", memReq);
 
-	return offset;
+	return memReq;
+}
+
+int setDirtyBit(int id) {
+	srand(time(0));
+	int randDB = rand() % 1;
+
+	return randDB;
 }
 
 void loop(int id){
