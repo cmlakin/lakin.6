@@ -33,9 +33,9 @@ int main(int argc, char ** argv){
         osclock.add(shm_data->launchSec, shm_data->launchNano);
     }
 
-    //while (totalProcesses < 5) {
+    while (totalProcesses < 5) {
       scheduler();
-    //}
+    }
 
     sleep(1);
 
@@ -191,8 +191,9 @@ void initialize() {
 	initializeSharedMemory();
 	msg_id = initializeMessageQueue();
   initializeFT();
-  //initStats();
+  initStats();
   ossClock();
+  shm_data->activeProcs = 0;
 }
 
 void initStats() {
@@ -240,7 +241,7 @@ void initializeFT(){
 int addFrame(int id, int pNum, int dirtyBit) {
   //FT * frameTable;
   int j, frameNum;
-
+  printf("***** adding frame for p%i\n", id);
   for (j = 0; j < 256; j++) {
       if (ft.frameTable[0][j] == -1){
         frameNum = j;
@@ -258,20 +259,22 @@ int addFrame(int id, int pNum, int dirtyBit) {
         frameNum = -1;
       }
   }
-
+  osclock.add(0, 1000);
   printFrames();
 
-  removeFrame(frameNum, id, pNum);
-  printFrames();
+  // removeFrame(frameNum, id, pNum);
+  // printFrames();
   return frameNum;
 }
 
 int removeFrame(int fNum, int id, int pNum){
+  printf("**** removing frame for p%i\n", id);
   ft.frameTable[0][fNum] = -1;
   ft.frameTable[1][fNum] = -1;
   ft.frameTable[2][fNum] = 0;//dirtyBit;
   // update pcb pageTable with frame number (j value)
   shm_data->ptab.pcb[id].pageTable[pNum] = -1;
+  osclock.add(0, 15000);
   return fNum;
 }
 

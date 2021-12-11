@@ -1,27 +1,69 @@
-//#include "shm.h"
+#include <stdbool.h>
+
+#include "config.h"
+#include "queue.h"
 
 
-//
-// priority queues items
-//
-typedef struct queueItem {
-    struct queueItem * next;
-    int processId;
-} queueItem;
-//
-// priority queue
-//
-typedef struct Queue {
-    void (*enqueue)(int pid);
-    int (*dequeue)(void);
-    struct queueItem * head;
-    struct queueItem * tail;
-} Queue;
+Queue all_queues[576];
 
-extern Queue all_queues[18];
-//void queueDump(int index, char * indent);
+int queueShift(Queue * queue);
+void queuePush(Queue * queue, int processId);
+
+queueItem * newItem(int processId) {
+    queueItem * new = (queueItem *)malloc(sizeof(queueItem));
+
+    new->next = NULL;
+    new->processId = processId;
+    return new;
+}
+
+void enqueue(int index, int processId) {
+    queuePush(&all_queues[index], processId);
+}
+
+int dequeue(int index) {
+    return queueShift(&all_queues[index]);
+}
+
+void queuePush(Queue * queue, int processId) {
+    queueItem  * new = newItem(processId);
 
 
-void enqueue(int, int);
-int dequeue(int);
-void queueDump(int);
+    // printf("push head %x tail %lx\n", (int)q->head, (long)q->tail);
+
+    if(queue->tail == NULL) {
+        queue->tail = new;
+        queue->head = queue->tail;
+    } else {
+        queue->tail->next = new;
+        queue->tail = new;
+    }
+    return;
+}
+
+int queueShift(Queue * queue) {
+    queueItem * item = queue->head;
+
+    if(item == NULL) {
+        queue->tail = NULL;
+        return -1;
+    }
+    queue->head = queue->head->next;
+    if(queue->head == NULL) {
+        queue->tail = NULL;
+    }
+    return item->processId;
+}
+
+void queueDump(int index) {
+    Queue * q = &all_queues[index];
+
+    queueItem *h = q->head;
+
+
+    while(h != NULL) {
+      printf("%d\n", h->processId);
+        h = h->next;
+    }
+
+}

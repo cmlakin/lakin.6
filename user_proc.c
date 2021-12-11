@@ -43,11 +43,11 @@ void doit(int id) {
 		msg.mtype = msg.mtype + 100;
 		int request = getMemAddr();
 		//printf("after getMemAddr\n");
-		
+
 		msg.memRef = request;
 		msg.dirtyBit = setDirtyBit(id);
 		printf("memref = %i\n", msg.memRef);
-
+		strcpy(msg.mtext, "bar");
 		// strcpy(msg.mtext, strbuf);
 		// snprintf(&msg.mtext[0],sizeof(msg.mtext), "from %ld",  id);
 		if (msgsnd(msg_id, (void *)&msg, sizeof(msg), 0) == -1) {
@@ -80,7 +80,7 @@ int getMemAddr() {
 
 int setDirtyBit(int id) {
 	srand(time(0));
-	int randDB = rand() % 1;
+	int randDB = rand() % 2;
 
 	return randDB;
 }
