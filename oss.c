@@ -105,13 +105,13 @@ void memoryRequest(PCB *pcb) {
 
 	printf("oss msg received: %s\n", recv.mtext);
 
-  char * dbit = NULL;
+  char * dbit = 0;
   printf("msg dirty bit = %i\n", recv.dirtyBit);
   if(recv.dirtyBit == 0) {
-    strcpy(dbit, "read");
+    dbit = "read";
   }
   else {
-    strcpy(dbit, "write");
+    dbit = "write";
   }
   snprintf(logbuf, sizeof(logbuf),
           "Master P%i is requesting %s of address %i at time %0d:%09d\n",
