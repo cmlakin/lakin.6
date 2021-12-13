@@ -34,9 +34,9 @@ int main(int argc, char ** argv){
         osclock.add(shm_data->launchSec, shm_data->launchNano);
     }
 
-    while (totalProcesses < 5) {
+    //while (totalProcesses < 5) {
       scheduler();
-    }
+    //}
 
     sleep(1);
 
@@ -50,31 +50,38 @@ int main(int argc, char ** argv){
 /** maybe reuse **/
 void scheduler() {
     PCB * foo;
+    int terminate;
+
 
     foo = createProcess();
     //int pInd = foo->local_pid & 0xff;
     // printf("pInd = %i\n", pInd);
 
-    // while (totalProcesses < 5) {//MAX_TOT_PROCS) {
-    //
-    //
-    //   if (shm_data->activeProcs < 5) {//PROCESSES) {
-    //     int create = osclock.seconds() > shm_data->launchSec;
-    //
-    //     if(!create && osclock.seconds()) {
-    //       create = osclock.seconds() > shm_data->launchSec && osclock.nanoseconds() >= shm_data->launchNano;
-    //     }
-    //     create = 1;
-    //     if(create) {
-    //       printf("current %0d:%09d\n", osclock.seconds(), osclock.nanoseconds());
-    //       printf("lanuch  %0d:%09d\n", shm_data->launchSec, shm_data->launchNano);
-    //       foo = createProcess();
-    //       launchNewProc();
-    //     }
-    //   }
-    // }
-    memoryRequest(foo);
+    while (totalProcesses < 5) {//MAX_TOT_PROCS) {
+      while (activeProcs < 5) {
+        launchNewProc();
+        if ((shm_data->launchSec <= osclock.seconds())  &&
+            (shm_data->launchNano <= osclock.nanoseconds())) {
+              foo = createProcess();
+              memoryRequest(foo);
+        }
+        else {
+          if ((foo = dequeue(0)) != NULL) {
+            // check to terminate
+            terminate = checkTerminate(foo);
 
+            if (terminate == 1) {
+              terminateProc(foo);
+            }
+            else {
+              // if not terminate check queue
+              memoryRequest(foo);
+            }
+          }
+        }
+      }
+    }
+    //memoryRequest(foo);
 }
 
 void memoryRequest(PCB *pcb) {
@@ -142,8 +149,8 @@ void memoryRequest(PCB *pcb) {
 
 PCB * createProcess() {
     printf("\ncreateProcess\n");
-    shm_data->activeProcs++;
-    printf("activeProcs = %i\n", shm_data->activeProcs);
+    activeProcs++;
+    printf("activeProcs = %i\n", activeProcs);
     totalProcesses++;
 
     PCB *pcb;
@@ -198,7 +205,6 @@ void initialize() {
   initializeFT();
   initStats();
   ossClock();
-  shm_data->activeProcs = 0;
 }
 
 void initStats() {
@@ -348,8 +354,33 @@ void checkRequest(int id, int pNum, int dirtyBit, char * dbit, int addr){
   printf("page faults = %i\n", shm_data->pageFault);
 }
 
-void updatePageTable(){
+int checkTerminate() {
+  int termTime = rand() % 200 - 100;
+  //printf("_______termTime = %i\n", termTime);
 
+  termTime = termTime + 1000 + osclock.nanoseconds();
+  //printf("_______termTime2 = %i\n", termTime);
+  if (termTime <= osclock.nanoseconds()){
+    return 1;
+  }
+  else {
+    return 0;
+  }
+}
+
+void terminateProc(PCB * pcb) {
+    int j;
+
+    for (j = 0; j < 32; j++) {
+      if (pcb->pageTable[j] != -1) {
+        ft.frameTable[0][j] = -1;
+        ft.frameTable[1][j] = -1;
+        ft.frameTable[2][j] = 0;
+        pcb->pageTable[j] = -1;
+      }
+    }
+
+    kill(getpid(), SIGKILL);
 }
 
 void launchNewProc() {
@@ -359,8 +390,15 @@ void launchNewProc() {
     // printf("launch %i.%i\n", shm_data->launchSec, shm_data->launchNano);
 
     // add to  to get new time to run
-    shm_data->launchSec += osclock.seconds();
     shm_data->launchNano += osclock.nanoseconds();
+
+    if (shm_data->launchNano > 1000000000) {
+      shm_data->launchSec += shm_data->launchNano / 1000000000;
+      shm_data->launchNano %= 1000000000;
+    }
+    else {
+      shm_data->launchSec += osclock.seconds();
+    }
     // printf("new launch %i.%i\n", shm_data->launchSec, shm_data->launchNano);
 }
 
@@ -369,14 +407,6 @@ void ossClock() {
     osclock.set(0, 0);
     printf("ossClock: clockInit %i:%i\n", osclock.seconds(), osclock.nanoseconds());
 }
-
-// void deinitSharedMemory() {
-//     if (shmdt(shm_data) == -1) {
-//         snprintf(perror_buf, sizeof(perror_buf), "%s: shmdt: ", perror_arg0);
-//         perror(perror_buf);
-//     }
-//     shmctl(shm_id, IPC_RMID, NULL);
-// }
 
 void setBit(int b) {
     g_bitVector |= (1 << b);
