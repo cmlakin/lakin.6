@@ -82,6 +82,7 @@ void scheduler() {
       }
     }
     //memoryRequest(foo);
+    
 }
 
 void memoryRequest(PCB *pcb) {
