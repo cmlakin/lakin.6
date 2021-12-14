@@ -6,29 +6,30 @@
 
 Queue all_queues[1];
 
-int queueShift(Queue * queue);
-void queuePush(Queue * queue, int processId, int page, int dirty);
+queueItem * queueShift(Queue * queue);
+void queuePush(Queue * queue, int processId, int memAddr, int dirtyBit, char * dbit);
 
-queueItem * newItem(int processId, int page, int dirty) {
+queueItem * newItem(int processId, int memAddr, int dirtyBit, char * dbit) {
     queueItem * new = (queueItem *)malloc(sizeof(queueItem));
 
     new->next = NULL;
     new->processId = processId;
-    new->page = page;
-    new->dirty = dirty;
+    new->memAddr = memAddr;
+    new->dirtyBit = dirtyBit;
+    new->dbit = dbit;
     return new;
 }
 
-void enqueue(int index, int processId, int page, int dirty) {
-    queuePush(&all_queues[index], processId, page, dirty);
+void enqueue(int index, int processId, int memAddr, int dirtyBit, char * dbit) {
+    queuePush(&all_queues[index], processId, memAddr, dirtyBit, dbit);
 }
 
-int dequeue(int index) {
+queueItem * dequeue(int index) {
     return queueShift(&all_queues[index]);
 }
 
-void queuePush(Queue * queue, int processId, int page, int dirty) {
-    queueItem  * new = newItem(processId, page, dirty);
+void queuePush(Queue * queue, int processId, int memAddr, int dirtyBit, char * dbit) {
+    queueItem  * new = newItem(processId, memAddr, dirtyBit, dbit);
 
 
     // printf("push head %x tail %lx\n", (int)q->head, (long)q->tail);
@@ -43,18 +44,20 @@ void queuePush(Queue * queue, int processId, int page, int dirty) {
     return;
 }
 
-int queueShift(Queue * queue) {
+queueItem * queueShift(Queue * queue) {
     queueItem * item = queue->head;
-
+    //printf("in dequeue\n");
     if(item == NULL) {
         queue->tail = NULL;
-        return -1;
+        //printf("returning null from dequeue\n");
+        return NULL;
     }
     queue->head = queue->head->next;
     if(queue->head == NULL) {
         queue->tail = NULL;
     }
-    return item->processId;
+    //printf("end of dequeue\n");
+    return item;
 }
 
 void queueDump(int index) {

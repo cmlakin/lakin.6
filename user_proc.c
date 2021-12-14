@@ -30,20 +30,13 @@ int main (int argc, char ** argv){
 }
 
 void doit(int id) {
-	//while(1) {
+	while(1) {
 		ipcmsg msg;
-		printf("user_proc id = %i\n", id);
-		printf("user_proc waiting for message\n");
-		if(msgrcv(msg_id, (void *)&msg, sizeof(ipcmsg), id + 1, 0) == -1) {
-			printf("error receving message\n");
-			exit(-1);
-		}
-		printf("user_proc receving message\n");
-		printf("suer_proc msg received: %s\n", msg.mtext);
-		msg.mtype = msg.mtype + 100;
+
+		msg.mtype = 100;
 		int request = getMemAddr();
 		//printf("after getMemAddr\n");
-
+		msg.procId = id;
 		msg.memRef = request;
 		msg.dirtyBit = setDirtyBit(id);
 		printf("memref = %i\n", msg.memRef);
@@ -55,11 +48,16 @@ void doit(int id) {
 		}
 		//id = foo;
 		printf("user_proc sent msg\n");
-		// if(operation == PT_TERMINATE) {
-		// 	printf("uproc terminated\n");
-		// 	kill(getpid(), SIGKILL);
-		// }
-	//}
+
+		// printf("user_proc id = %i\n", id);
+		printf("user_proc waiting for message\n");
+		if(msgrcv(msg_id, (void *)&msg, sizeof(ipcmsg), id + 1, 0) == -1) {
+			printf("error receving message\n");
+			exit(-1);
+		}
+		printf("user_proc receving message\n");
+		// printf("suer_proc msg received: %s\n", msg.mtext);
+	}
 }
 
 void uprocInitialize(){
@@ -68,9 +66,9 @@ void uprocInitialize(){
 
 int getMemAddr() {
 	//srand(time(0));
-	int pageNum = rand() % 32 + 1;
+	int pageNum = rand() % 32;
 	printf("pageNum = %i\n", pageNum);
-	int offset = rand() % 1023 + 1;
+	int offset = rand() % 1024;
 	printf("randOffset = %i\n", offset);
 	int memReq = pageNum * 1024 + offset;
 	printf("memReq = %i\n", memReq);

@@ -11,6 +11,7 @@ static int maxTimeBetweenNewProcsSecs = 1;
 static int g_bitVector = 0;
 static char * perror_arg0 = "oss"; // pointer to return error value
 static int msg_id = -1;
+static int activeProcs = 0;
 #else
 //
 // otherwise just refer to them
@@ -20,6 +21,7 @@ extern int maxTimeBetweenNewProcsSecs = 1;
 extern int g_bitVector = 0;
 extern char * perror_arg0 = "oss"; // pointer to return error value
 extern int msg_id = -1;
+extern int activeProcs = 0;
 #endif
 
 char perror_buf[50]; // buffer for perror
@@ -56,10 +58,14 @@ int findAvailablePcb(void);
 void printStats();
 void initStats();
 void memoryRequest();
-void checkRequest(int, int, int, char *, int);
+void checkRequest(int, int, char *, int);
 void updatePageTable();
 int addFrame(int, int, int);
 int removeFrame(int, int, int);
 void initializeFT();
 void printFrames();
 void swapFrames();
+int checkTerminate();
+void terminateProc();
+int getPageNumber(int);
+void checkExitTime(time_t);
