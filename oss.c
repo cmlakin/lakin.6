@@ -125,9 +125,7 @@ void scheduler(time_t seconds) {
       else {
 
       }
-
     }
-    //memoryRequest(foo);
     checkExitTime(seconds);
 }
 
