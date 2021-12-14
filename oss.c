@@ -51,22 +51,54 @@ int main(int argc, char ** argv){
 void scheduler() {
     PCB * foo;
     int terminate;
-
+    queueItem * item;
+    struct ipcmsg recv;
 
     foo = createProcess();
     //int pInd = foo->local_pid & 0xff;
     // printf("pInd = %i\n", pInd);
 
     while (totalProcesses < 5) {//MAX_TOT_PROCS) {
-      while (activeProcs < 5) {
-        launchNewProc();
-        if ((shm_data->launchSec <= osclock.seconds())  &&
-            (shm_data->launchNano <= osclock.nanoseconds())) {
-              foo = createProcess();
-              memoryRequest(foo);
+      //printf("printing above recv\n");
+      if (msgrcv(msg_id, (void *)&recv, sizeof(recv), 0, IPC_NOWAIT) != -1) {
+        printf("msg in queue\n");
+        printf("procId = %i\n", recv.procId);
+        char * dbit = 0;
+        //printf("msg dirty bit = %i\n", recv.dirtyBit);
+        if(recv.dirtyBit == 0) {
+          dbit = "read";
         }
         else {
-          if ((foo = dequeue(0)) != NULL) {
+          dbit = "write";
+        }
+        snprintf(logbuf, sizeof(logbuf),
+                "Master P%i is requesting %s of address %i at time %0d:%09d\n",
+                  foo->local_pid & 0xff, dbit, recv.memRef,
+                  osclock.seconds(), osclock.nanoseconds());
+
+        logger(logbuf);
+
+        int id = recv.procId;
+        // calculate page number
+        int addr = recv.memRef;
+        //printf("addr = %i\n", addr);
+        int pNum = addr / 1024;
+        //printf("pNum = %i\n", pNum);
+        int dirtyBit = recv.dirtyBit;
+        checkRequest(id, pNum, dirtyBit, dbit, addr);
+        //exit(0);
+      }
+      //printf("print after recv\n");
+      while (activeProcs < 1) {
+        launchNewProc();
+        // if ((shm_data->launchSec <= osclock.seconds())  &&
+        //     (shm_data->launchNano <= osclock.nanoseconds())) {
+              foo = createProcess();
+
+        //}
+        // else {
+          if ((item = dequeue(0)) != NULL) {
+            foo = &shm_data->ptab.pcb[item->processId];
             // check to terminate
             terminate = checkTerminate(foo);
 
@@ -74,15 +106,36 @@ void scheduler() {
               terminateProc(foo);
             }
             else {
-              // if not terminate check queue
-              memoryRequest(foo);
+              // if not terminate check
+              //memoryRequest(foo);
+              char * dbit = 0;
+              //printf("msg dirty bit = %i\n", recv.dirtyBit);
+              if(item.dirtyBit == 0) {
+                dbit = "read";
+              }
+              else {
+                dbit = "write";
+              }
+              snprintf(logbuf, sizeof(logbuf),
+                      "Master P%i is requesting %s of address %i at time %0d:%09d\n",
+                        foo->local_pid & 0xff, dbit, recv.memRef,
+                        osclock.seconds(), osclock.nanoseconds());
+
+              logger(logbuf);
+
+              // int id = item.procId;
+              // // calculate page number
+              // int addr = item.memRef;
+              // //printf("pNum = %i\n", pNum);
+              // int dirtyBit = item.dirtyBit;
+              checkRequest(id, dirtyBit, dbit, addr);
             }
           }
-        }
+        // }
       }
     }
     //memoryRequest(foo);
-    
+
 }
 
 void memoryRequest(PCB *pcb) {
@@ -97,9 +150,9 @@ void memoryRequest(PCB *pcb) {
 	memset((void *)&send, 0, sizeof(send));
 	send.mtype = (pcb->local_pid & 0xff) + 1;
   printf("mtype = %li\n", send.mtype);
-  send.ossid = send.mtype + 100;
+  //send.ossid = send.mtype + 100;
 	strcpy(send.mtext, "foo");
-  printf("ossid %d\n", (int)send.ossid);
+  //printf("ossid %d\n", (int)send.ossid);
 	while (msgsnd(msg_id, (void *)&send, sizeof(send), 0) == -1) {
 		printf("oss: msg not sent to %d error %d\n", (int)send.mtype, errno);
 		sleep(1);
@@ -110,37 +163,37 @@ void memoryRequest(PCB *pcb) {
 
 	printf("oss: waiting for msg\n");
   //sleep(1);
-	while(msgrcv(msg_id, (void *)&recv, sizeof(recv), send.ossid, 0) == -1) {
-		printf("oss: waiting for msg error %d\n", errno);
-	}
+	// while(msgrcv(msg_id, (void *)&recv, sizeof(recv), send.ossid, 0) == -1) {
+	// 	printf("oss: waiting for msg error %d\n", errno);
+	// }
 
 	printf("oss msg received: %s\n", recv.mtext);
 
-  char * dbit = 0;
-  //printf("msg dirty bit = %i\n", recv.dirtyBit);
-  if(recv.dirtyBit == 0) {
-    dbit = "read";
-  }
-  else {
-    dbit = "write";
-  }
-  snprintf(logbuf, sizeof(logbuf),
-          "Master P%i is requesting %s of address %i at time %0d:%09d\n",
-            pcb->local_pid & 0xff, dbit, recv.memRef,
-            osclock.seconds(), osclock.nanoseconds());
+  // char * dbit = 0;
+  // //printf("msg dirty bit = %i\n", recv.dirtyBit);
+  // if(recv.dirtyBit == 0) {
+  //   dbit = "read";
+  // }
+  // else {
+  //   dbit = "write";
+  // }
+  // snprintf(logbuf, sizeof(logbuf),
+  //         "Master P%i is requesting %s of address %i at time %0d:%09d\n",
+  //           pcb->local_pid & 0xff, dbit, recv.memRef,
+  //           osclock.seconds(), osclock.nanoseconds());
+  //
+  // logger(logbuf);
 
-  logger(logbuf);
-
-  // calculate page number
-  int addr = recv.memRef;
-  //printf("addr = %i\n", addr);
-  int pNum = addr / 1024;
-  //printf("pNum = %i\n", pNum);
-
-  int dirtyBit = recv.dirtyBit;
-
-
-  checkRequest(id, pNum, dirtyBit, dbit, addr);
+  // // calculate page number
+  // int addr = recv.memRef;
+  // //printf("addr = %i\n", addr);
+  // int pNum = addr / 1024;
+  // //printf("pNum = %i\n", pNum);
+  //
+  // int dirtyBit = recv.dirtyBit;
+  //
+  //
+  // checkRequest(id, pNum, dirtyBit, dbit, addr);
 
   //printf("after checkRequest()\n");
   //printFrames();
@@ -271,7 +324,7 @@ int addFrame(int id, int pNum, int dirtyBit) {
         frameNum = -1;
       }
   }
-  osclock.add(0, 1000);
+  osclock.add(0, 1053);
   printFrames();
 
   // removeFrame(frameNum, id, pNum);
@@ -286,7 +339,7 @@ int removeFrame(int fNum, int id, int pNum){
   ft.frameTable[2][fNum] = 0;//dirtyBit;
   // update pcb pageTable with frame number (j value)
   shm_data->ptab.pcb[id].pageTable[pNum] = -1;
-  osclock.add(0, 15000);
+  osclock.add(0, 15051);
   return fNum;
 }
 
@@ -307,14 +360,20 @@ void printFrames() {
   }
 }
 
-void checkRequest(int id, int pNum, int dirtyBit, char * dbit, int addr){
-  srand(time(0));
+int getPageNumber(int addr) {
+  int pageNum = addr / 1024;
+  return pageNum;
+}
+
+void checkRequest(int id, int dirtyBit, char * dbit, int addr){
+  int pNum = getPageNumber(addr);
+
   printf("page table value = %i\n", shm_data->ptab.pcb[id].pageTable[pNum]);
   // check page table
   if (shm_data->ptab.pcb[id].pageTable[pNum] == -1) {
     osclock.add(0, 14000000);
     shm_data->pageFault += 1;
-    enqueue(0, id, pNum, dirtyBit);
+    enqueue(0, id, pNum, dirtyBit, dbit);
     addFrame(id, pNum, dirtyBit);
 
     snprintf(logbuf, sizeof(logbuf),

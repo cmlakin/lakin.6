@@ -13,7 +13,7 @@ void mqDetach();
 typedef struct ipcmsg {
 	long mtype;
 	char mtext[MAX_TEXT];
-  int ossid;
+  int procId;
 	int memRef; // adress request
   int dirtyBit; // read (0) or write (1)
 

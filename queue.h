@@ -8,8 +8,9 @@
 typedef struct queueItem {
     struct queueItem * next;
     int processId;
-    int page;
+    int memAddr;
     int dirty;
+    char * dbit;
 } queueItem;
 //
 // priority queue
@@ -26,5 +27,5 @@ extern Queue all_queues[1];
 
 
 void enqueue(int, int, int, int);
-int dequeue(int);
+queueItem * dequeue(int);
 void queueDump(int);

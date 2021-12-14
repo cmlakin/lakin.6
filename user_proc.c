@@ -32,18 +32,18 @@ int main (int argc, char ** argv){
 void doit(int id) {
 	//while(1) {
 		ipcmsg msg;
-		printf("user_proc id = %i\n", id);
-		printf("user_proc waiting for message\n");
-		if(msgrcv(msg_id, (void *)&msg, sizeof(ipcmsg), id + 1, 0) == -1) {
-			printf("error receving message\n");
-			exit(-1);
-		}
-		printf("user_proc receving message\n");
-		printf("suer_proc msg received: %s\n", msg.mtext);
-		msg.mtype = msg.mtype + 100;
+		// printf("user_proc id = %i\n", id);
+		// printf("user_proc waiting for message\n");
+		// if(msgrcv(msg_id, (void *)&msg, sizeof(ipcmsg), id + 1, 0) == -1) {
+		// 	printf("error receving message\n");
+		// 	exit(-1);
+		// }
+		// printf("user_proc receving message\n");
+		// printf("suer_proc msg received: %s\n", msg.mtext);
+		msg.mtype = 100;
 		int request = getMemAddr();
 		//printf("after getMemAddr\n");
-
+		msg.procId = id;
 		msg.memRef = request;
 		msg.dirtyBit = setDirtyBit(id);
 		printf("memref = %i\n", msg.memRef);
