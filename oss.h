@@ -68,3 +68,4 @@ void swapFrames();
 int checkTerminate();
 void terminateProc();
 int getPageNumber(int);
+void checkExitTime(time_t);
