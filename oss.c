@@ -25,8 +25,8 @@ int main(int argc, char ** argv){
 
     unlink(LOG_FILENAME);
     srand(getpid());
-    time_t seconds;
-    seconds = time(NULL);
+    // time_t seconds;
+    // seconds = time(NULL);
 
     //FT ft;
 
@@ -38,7 +38,7 @@ int main(int argc, char ** argv){
     }
 
     //while (totalProcesses < 5) {
-      scheduler(seconds);
+      scheduler();
     //}
 
     sleep(1);
@@ -51,7 +51,7 @@ int main(int argc, char ** argv){
 }
 
 /** maybe reuse **/
-void scheduler(time_t seconds) {
+void scheduler() {
     PCB * foo;
     int terminate;
     queueItem * item;
@@ -63,9 +63,9 @@ void scheduler(time_t seconds) {
     // printf("pInd = %i\n", pInd);
 
     while (totalProcesses < 5) {//MAX_TOT_PROCS) {
-      checkExitTime(seconds);
+      //checkExitTime(seconds);
       //printf("printing above recv\n");
-      if (msgrcv(msg_id, (void *)&recv, sizeof(recv), 0, IPC_NOWAIT) != -1) {
+      if (msgrcv(msg_id, (void *)&recv, sizeof(recv), 100, IPC_NOWAIT) != -1) {
         printf("msg in queue\n");
         printf("procId = %i\n", recv.procId);
         char * dbit = 0;
@@ -84,7 +84,7 @@ void scheduler(time_t seconds) {
         logger(logbuf);
 
         checkRequest(recv.procId, recv.dirtyBit, dbit, recv.memRef);
-        checkExitTime(seconds);
+        //checkExitTime(seconds);
       }
 
       if ((item = dequeue(0)) != NULL) {
@@ -95,7 +95,7 @@ void scheduler(time_t seconds) {
 
         if (terminate == 1) {
           terminateProc(foo);
-          checkExitTime(seconds);
+          //checkExitTime(seconds);
         }
         else {
           // if not terminate check
@@ -110,7 +110,7 @@ void scheduler(time_t seconds) {
           }
 
           checkRequest(item->processId, item->dirtyBit, dbit, item->memAddr);
-          checkExitTime(seconds);
+          //checkExitTime(seconds);
         }
       }
 
@@ -119,21 +119,21 @@ void scheduler(time_t seconds) {
       // if ((shm_data->launchSec <= osclock.seconds())  &&
       //     (shm_data->launchNano <= osclock.nanoseconds())) {
             foo = createProcess();
-            checkExitTime(seconds);
+            //checkExitTime(seconds);
 
       }
       else {
 
       }
     }
-    checkExitTime(seconds);
+    //checkExitTime(seconds);
 }
 
-void checkExitTime(time_t seconds) {
-  if ((seconds + 2) < seconds){
-    bail();
-  }
-}
+// void checkExitTime(time_t seconds) {
+//   if ((seconds + 2) < seconds){
+//     bail();
+//   }
+// }
 
 PCB * createProcess() {
     printf("\ncreateProcess\n");
@@ -378,8 +378,9 @@ void terminateProc(PCB * pcb) {
         pcb->pageTable[j] = -1;
       }
     }
-
-    kill(getpid(), SIGKILL);
+    printf("killing process %i\n", pcb->pid);
+    kill(pcb->pid, SIGKILL);
+    printf("process %i killed\n", pcb->pid);
 }
 
 void launchNewProc() {
