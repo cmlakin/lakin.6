@@ -32,6 +32,17 @@ int main (int argc, char ** argv){
 void doit(int id) {
 	while(1) {
 		ipcmsg msg;
+		int terminate;
+
+		terminate = checkTerminate();
+		if (terminate == 1) {
+			strcpy(msg.mtext, "terminate");
+			printf("proc wants to terminate\n");
+		}
+		else {
+			strcpy(msg.mtext, "run");
+			printf("proc wants to run\n");
+		}
 
 		msg.mtype = 100;
 		int request = getMemAddr();
@@ -43,15 +54,16 @@ void doit(int id) {
 		strcpy(msg.mtext, "bar");
 		// strcpy(msg.mtext, strbuf);
 		// snprintf(&msg.mtext[0],sizeof(msg.mtext), "from %ld",  id);
-		if (msgsnd(msg_id, (void *)&msg, sizeof(msg), 0) == -1) {
+		if (msgsnd(msg_id, (void *)&msg, sizeof(msg) - sizeof(long), 0) == -1) {
 			printf("user_proc msg not sent");
+			exit(0);
 		}
 		//id = foo;
 		printf("user_proc sent msg\n");
 
 		// printf("user_proc id = %i\n", id);
 		printf("user_proc waiting for message\n");
-		if(msgrcv(msg_id, (void *)&msg, sizeof(ipcmsg), id + 1, 0) == -1) {
+		if(msgrcv(msg_id, (void *)&msg, sizeof(ipcmsg) - sizeof(long), id + 1, 0) == -1) {
 			printf("error receving message\n");
 			exit(-1);
 		}
@@ -91,42 +103,18 @@ int setDirtyBit(int id) {
 	return randDB;
 }
 
-void loop(int id){
-  struct timespec start;
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
-  //srand(time(0));
-  //int randNum = rand() % 250000000000 + 1;
-  printf("in loop()\n");
-  while(true) {
-      struct timespec now;
-      long diff;
-
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &now);
-    diff = start.tv_nsec - now.tv_nsec;
-
-    if (diff > 1000000000) {
-      break;
-    }
+int checkTerminate() {
+  int termTime = rand() % 200 - 100;
+  //printf("_______termTime = %i\n", termTime);
+  termTime = termTime + 1000 + osclock.nanoseconds();
+  //printf("_______termTime2 = %i\n", termTime);
+  if (termTime <= osclock.nanoseconds()) {
+    return 1;
   }
-
-  // srand(time(0));
-  // int randNum = rand() % 10 + 1;
-	//
-  // if (randNum < PROB_RELEASE) {
-  //   releaseResources(id);
-  // }
-  // else if (randNum < PROB_TERMINATE) {
-  //   procTerminate(id);
-  // }
-  // else {
-  //   requestResources(id);
-  // }
-  // int randNano = rand() % 500000000;
-  // updateClock(0, randNano);
-
+  else {
+    return 0;
+  }
 }
-
-
 
 void attachSharedMemory() {
   printf("uproc attachSharedMemory\n");
