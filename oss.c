@@ -48,6 +48,8 @@ void scheduler() {
   PCB * foo;
   queueItem * item;
   struct ipcmsg recv;
+  char * killProc = "terminate";
+  int stringValue;
   int seconds = 0;
   foo = createProcess();
   //int pInd = foo->local_pid & 0xff;
@@ -55,7 +57,7 @@ void scheduler() {
   while (totalProcesses < 5) {//MAX_TOT_PROCS) {
     int rval;
     checkExitTime(seconds);
-    rval = msgrcv(msg_id, (void *)&recv, sizeof(recv), 100, IPC_NOWAIT);
+    rval = msgrcv(msg_id, (void *)&recv, sizeof(recv) - sizeof(long), 100, IPC_NOWAIT);
     recv.mtype = 1;
     if (rval != -1) {
       printf("oss msg received rval = %i\n", rval);
@@ -89,8 +91,8 @@ void scheduler() {
       // continue;
       foo = &shm_data->ptab.pcb[item->processId];
       // check to terminate
-
-      if (recv.mtext == "kil") {
+      stringValue = strcmp(killProc, recv.mtext);
+      if (stringValue == 0) {
         terminateProc(foo);
         checkExitTime(seconds);
       }
@@ -172,7 +174,6 @@ PCB * createProcess() {
 }
 
 void initialize() {
-  //createQueues();
   initializeSig();
   initializeSharedMemory();
   msg_id = initializeMessageQueue();
@@ -304,7 +305,7 @@ void checkRequest(int id, int dirtyBit, char * dbit, int addr){
     logger(logbuf);
     // strcpy(send.mtext, "done");
     send.mtype = id + 1;
-    msgsnd(msg_id, (void *)&send, sizeof(send), 0);
+    msgsnd(msg_id, (void *)&send, sizeof(send) - sizeof(long), 0);
     osclock.add(0, 5000000);
     if (dirtyBit == 1) {
       snprintf(logbuf, sizeof(logbuf),
@@ -387,8 +388,9 @@ void doSigHandler(int sig) {
 void bail() {
   printf("bail()\n");
   shmDetach();
+  printf("after shmDetach\n");
   mqDetach();
-  kill(0, SIGTERM);
+  printf("after mqDetach\n");
   exit(0);
 }
 

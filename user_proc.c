@@ -36,7 +36,7 @@ void doit(int id) {
 
 		terminate = checkTerminate();
 		if (terminate == 1) {
-			strcpy(msg.mtext, "kil");
+			strcpy(msg.mtext, "terminate");
 			printf("proc wants to terminate\n");
 		}
 		else {
@@ -54,15 +54,16 @@ void doit(int id) {
 		strcpy(msg.mtext, "bar");
 		// strcpy(msg.mtext, strbuf);
 		// snprintf(&msg.mtext[0],sizeof(msg.mtext), "from %ld",  id);
-		if (msgsnd(msg_id, (void *)&msg, sizeof(msg), 0) == -1) {
+		if (msgsnd(msg_id, (void *)&msg, sizeof(msg) - sizeof(long), 0) == -1) {
 			printf("user_proc msg not sent");
+			exit(0);
 		}
 		//id = foo;
 		printf("user_proc sent msg\n");
 
 		// printf("user_proc id = %i\n", id);
 		printf("user_proc waiting for message\n");
-		if(msgrcv(msg_id, (void *)&msg, sizeof(ipcmsg), id + 1, 0) == -1) {
+		if(msgrcv(msg_id, (void *)&msg, sizeof(ipcmsg) - sizeof(long), id + 1, 0) == -1) {
 			printf("error receving message\n");
 			exit(-1);
 		}
