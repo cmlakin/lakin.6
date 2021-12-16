@@ -22,11 +22,9 @@ int main (int argc, char ** argv){
 
 	srand(getpid());
 
-
 	uprocInitialize();
 	attachSharedMemory();
 	doit(id);
-	//uprocFinished(ptype);
 }
 
 void doit(int id) {
@@ -37,11 +35,11 @@ void doit(int id) {
 		terminate = checkTerminate();
 		if (terminate == 1) {
 			strcpy(msg.mtext, "terminate");
-			printf("proc wants to terminate\n");
+			//printf("proc wants to terminate\n");
 		}
 		else {
 			strcpy(msg.mtext, "run");
-			printf("proc wants to run\n");
+			//printf("proc wants to run\n");
 		}
 
 		msg.mtype = 100;
@@ -50,24 +48,25 @@ void doit(int id) {
 		msg.procId = id;
 		msg.memRef = request;
 		msg.dirtyBit = setDirtyBit(id);
-		printf("memref = %i\n", msg.memRef);
+		//printf("memref = %i\n", msg.memRef);
 		strcpy(msg.mtext, "bar");
 		// strcpy(msg.mtext, strbuf);
 		// snprintf(&msg.mtext[0],sizeof(msg.mtext), "from %ld",  id);
 		if (msgsnd(msg_id, (void *)&msg, sizeof(msg) - sizeof(long), 0) == -1) {
-			printf("user_proc msg not sent");
+			//printf("user_proc msg not sent");
 			exit(0);
 		}
-		//id = foo;
-		printf("user_proc sent msg\n");
+		shm_data->memPerSec++;
+
+		//printf("user_proc sent msg\n");
 
 		// printf("user_proc id = %i\n", id);
-		printf("user_proc waiting for message\n");
+		//printf("user_proc waiting for message\n");
 		if(msgrcv(msg_id, (void *)&msg, sizeof(ipcmsg) - sizeof(long), id + 1, 0) == -1) {
-			printf("error receving message\n");
+			//printf("error receving message\n");
 			exit(-1);
 		}
-		printf("user_proc receving message\n");
+		//printf("user_proc receving message\n");
 		// printf("suer_proc msg received: %s\n", msg.mtext);
 	}
 }
@@ -79,11 +78,11 @@ void uprocInitialize(){
 int getMemAddr() {
 	//srand(time(0));
 	int pageNum = rand() % 32;
-	printf("pageNum = %i\n", pageNum);
+	//printf("pageNum = %i\n", pageNum);
 	int offset = rand() % 1024;
-	printf("randOffset = %i\n", offset);
+	//printf("randOffset = %i\n", offset);
 	int memReq = pageNum * 1024 + offset;
-	printf("memReq = %i\n", memReq);
+	//printf("memReq = %i\n", memReq);
 
 	return memReq;
 }
@@ -91,7 +90,7 @@ int getMemAddr() {
 int setDirtyBit(int id) {
 	//srand(time(0));
 	int randDB = rand() % 10;
-	printf("---randDB = %i\n", randDB);
+	//printf("---randDB = %i\n", randDB);
 
 	if (randDB < PROB_DIRTY_BIT) {
 		randDB = 1;
@@ -117,6 +116,6 @@ int checkTerminate() {
 }
 
 void attachSharedMemory() {
-  printf("uproc attachSharedMemory\n");
+  //printf("uproc attachSharedMemory\n");
   shm_data = shmAttach();
 }

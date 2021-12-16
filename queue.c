@@ -67,7 +67,7 @@ void queueDump(int index) {
 
 
     while(h != NULL) {
-      printf("%d\n", h->processId);
+      //printf("%d\n", h->processId);
         h = h->next;
     }
 
